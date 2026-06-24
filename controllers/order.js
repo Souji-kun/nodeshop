@@ -1,129 +1,154 @@
-const connection = require('../config/_database');
-const sendEmail = require('../utils/sendEmail')
+const db = require('../models');
+const Order = db.Order;
+const OrderItem = db.OrderItem;
+const Item = db.Item;
+const Cart = db.Cart;
+const CartItem = db.CartItem;
+const Customer = db.Customer;
+const User = db.User;
+const sendEmail = require('../utils/sendEmail');
 
-exports.createOrder = (req, res, next) => {
-    // {
-    //     "cart": [
-    //         {
-    //             "item_id": 70,
-    //             "quantity": 2
-    //         },
-    //         {
-    //             "item_id": 71,
-    //             "quantity": 5
-    //         },
-    //         {
-    //             "item_id": 72,
-    //             "quantity": 1
-    //         }
-    //     ]
-    // }
-    // console.log(req.body,)
-    const { cart, } = req.body;
-    console.log(cart,)
-
-    const dateOrdered = new Date();
-    const dateShipped = new Date();
-
-    connection.beginTransaction(err => {
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ error: 'Transaction error', details: err });
+exports.createOrder = async (req, res, next) => {
+    const transaction = await db.sequelize.transaction();
+    
+    try {
+        const { cart } = req.body;
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            await transaction.rollback();
+            return res.status(401).json({ error: 'User not authenticated' });
         }
-
-        // Get customer_id from userId
-        // const sql = 'SELECT customer_id FROM customer WHERE user_id = ?';
-        const sql = 'SELECT c.customer_id, u.email FROM customer c INNER JOIN users u ON u.id = c.user_id WHERE u.id = ?';
-        connection.execute(sql, [parseInt(user.id)], (err, results) => {
-            if (err || results.length === 0) {
-                return connection.rollback(() => {
-                    if (!res.headersSent) {
-                        res.status(500).json({ error: 'Customer not found', details: err });
-                    }
-                });
-            }
-
-            // const customer_id = results[0].customer_id;
-            const { customer_id, email } = results[0]
-
-            // Insert into orderinfo
-            const orderInfoSql = 'INSERT INTO orderinfo (customer_id, date_placed, date_shipped, shipping) VALUES (?, ?, ?, ?)';
-            connection.execute(orderInfoSql, [customer_id, dateOrdered, dateShipped, 100], (err, result) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        if (!res.headersSent) {
-                            res.status(500).json({ error: 'Error inserting orderinfo', details: err });
-                        }
-                    });
-                }
-
-                const order_id = result.insertId;
-
-                // Insert each cart item into orderline
-                const orderLineSql = 'INSERT INTO orderline (orderinfo_id, item_id, quantity) VALUES (?, ?, ?)';
-                let errorOccurred = false;
-                let completed = 0;
-
-                if (cart.length === 0) {
-                    return connection.rollback(() => {
-                        if (!res.headersSent) {
-                            res.status(400).json({ error: 'Cart is empty' });
-                        }
-                    });
-                }
-
-                cart.forEach((item, idx) => {
-                    connection.execute(orderLineSql, [order_id, item.item_id, item.quantity], (err) => {
-                        if (err && !errorOccurred) {
-                            errorOccurred = true;
-                            return connection.rollback(() => {
-                                if (!res.headersSent) {
-                                    res.status(500).json({ error: 'Error inserting orderline', details: err });
-                                }
-                            });
-                        }
-
-
-                        completed++;
-
-                        if (completed === cart.length && !errorOccurred) {
-                            connection.commit(async err => {
-                                if (err) {
-                                    return connection.rollback(() => {
-                                        if (!res.headersSent) {
-                                            res.status(500).json({ error: 'Commit error', details: err });
-                                        }
-                                    });
-                                }
-
-                                const message = 'your order is being processed'
-                                try {
-                                    await sendEmail({
-                                        email,
-                                        subject: 'Order Success',
-                                        message
-                                    })
-                                }
-                                catch (emailErr) {
-
-                                    console.log('Email error:', emailErr);
-                                }
-
-                                if (!res.headersSent) {
-                                    res.status(201).json({
-                                        success: true,
-                                        order_id,
-                                        dateOrdered,
-                                        message: 'transaction complete',
-
-                                        cart
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-            });
+        
+        // Get customer
+        const customer = await Customer.findOne({
+            where: { user_id: userId },
+            include: [User]
         });
-    });
-}
+        
+        if (!customer) {
+            await transaction.rollback();
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        if (!cart || cart.length === 0) {
+            await transaction.rollback();
+            return res.status(400).json({ error: 'Cart is empty' });
+        }
+        
+        // Validate all items exist and calculate total
+        let totalAmount = 0;
+        const orderItems = [];
+        
+        for (let cartItem of cart) {
+            const item = await Item.findByPk(cartItem.item_id, { transaction });
+            
+            if (!item) {
+                await transaction.rollback();
+                return res.status(404).json({ error: `Item ${cartItem.item_id} not found` });
+            }
+            
+            const subtotal = Number(item.sell_price) * Number(cartItem.quantity);
+            totalAmount += subtotal;
+            
+            orderItems.push({
+                item_id: cartItem.item_id,
+                quantity: cartItem.quantity,
+                unit_price: item.sell_price,
+                subtotal: subtotal
+            });
+        }
+        
+        // Create order
+        const order = await Order.create({
+            customer_id: customer.customer_id,
+            date_placed: new Date(),
+            status: 'pending',
+            shipping: 100,
+            total_amount: totalAmount
+        }, { transaction });
+        
+        // Create order items
+        for (let orderItem of orderItems) {
+            await OrderItem.create({
+                orderinfo_id: order.order_id,
+                ...orderItem
+            }, { transaction });
+        }
+        
+        // Clear the session/customer cart
+        const userCart = await Cart.findOne({
+            where: { customer_id: customer.customer_id }
+        });
+        
+        if (userCart) {
+            await CartItem.destroy({
+                where: { cart_id: userCart.cart_id }
+            }, { transaction });
+        }
+        
+        await transaction.commit();
+        
+        // Send confirmation email
+        try {
+            const message = `Your order #${order.order_id} has been placed successfully. Total amount: $${totalAmount.toFixed(2)}`;
+            await sendEmail({
+                email: customer.User.email,
+                subject: 'Order Confirmation',
+                message
+            });
+        } catch (emailErr) {
+            console.log('Email error:', emailErr);
+        }
+        
+        return res.status(201).json({
+            success: true,
+            order_id: order.order_id,
+            date_placed: order.date_placed,
+            total_amount: order.total_amount,
+            message: 'Order placed successfully'
+        });
+    } catch (error) {
+        await transaction.rollback();
+        console.log(error);
+        return res.status(500).json({ error: 'Error creating order', details: error.message });
+    }
+};
+
+// Get customer orders
+exports.getOrders = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+        
+        // Get customer
+        const customer = await Customer.findOne({ where: { user_id: userId } });
+        
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        // Get orders with items
+        const orders = await Order.findAll({
+            where: { customer_id: customer.customer_id },
+            include: [
+                {
+                    model: OrderItem,
+                    include: [Item]
+                }
+            ],
+            order: [['date_placed', 'DESC']]
+        });
+        
+        return res.status(200).json({
+            success: true,
+            orders: orders
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error fetching orders', details: error.message });
+    }
+};
