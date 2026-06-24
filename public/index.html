@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS 2026 Login</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main>
+        <section class="shell" id="authView">
+            <div class="panel">
+            <div class="brand">
+                <span>NS 2026</span>
+                <small>Account access</small>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" type="button" data-mode="login">Login</button>
+                <button class="tab" type="button" data-mode="register">Register</button>
+            </div>
+
+            <form id="authForm">
+                <label class="field name-field hidden">
+                    <span>Name</span>
+                    <input id="name" type="text" autocomplete="name" placeholder="Jane Sales">
+                </label>
+
+                <label class="field">
+                    <span>Email</span>
+                    <input id="email" type="email" autocomplete="email" placeholder="jane@example.com" required>
+                </label>
+
+                <label class="field">
+                    <span>Password</span>
+                    <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required>
+                </label>
+
+                <button class="submit" type="submit">Login</button>
+                <p id="message" class="message"></p>
+            </form>
+            </div>
+        </section>
+
+        <section class="home-page hidden" id="homePage">
+            <header class="site-header">
+                <a class="logo" href="#home">NS 2026</a>
+                <nav class="main-menu" aria-label="Main menu">
+                    <a href="#home">Home</a>
+                    <a href="#products">Products</a>
+                    <a href="#p1">P1</a>
+                    <a href="#p2">P2</a>
+                    <div class="menu-item">
+                        <a href="#about">About</a>
+                        <div class="sub-menu">
+                            <a href="#about">Company</a>
+                            <a href="#adminDashboard">Admin index</a>
+                            <a href="#itemManager">Items</a>
+                            <a href="#productPage">Add product</a>
+                            <a href="#team">Team</a>
+                            <a href="#contact">Contact</a>
+                        </div>
+                    </div>
+                    <a href="#adminDashboard">Admin</a>
+                </nav>
+            </header>
+
+            <section class="hero" id="home">
+                <div>
+                    <p class="eyebrow">Welcome back</p>
+                    <h1 id="accountName">NS Shop</h1>
+                    <p id="accountEmail"></p>
+                </div>
+                <button id="logoutBtn" class="ghost" type="button">Logout</button>
+            </section>
+
+            <section class="products-section" id="products">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Featured products</p>
+                        <h2>Created product carousel</h2>
+                    </div>
+                    <div class="carousel-controls">
+                        <button id="prevProduct" type="button" aria-label="Previous product">&lt;</button>
+                        <button id="nextProduct" type="button" aria-label="Next product">&gt;</button>
+                    </div>
+                </div>
+
+                <div class="carousel" id="productCarousel">
+                    <article class="product-card featured-product-card" id="featuredProductCard">
+                        <div class="product-art art-one" id="featuredProductArt"></div>
+                        <h3 id="featuredProductName">No product yet</h3>
+                        <p id="featuredProductDescription">Create a product to display it here.</p>
+                        <strong id="featuredProductPrice">$0.00</strong>
+                    </article>
+                    <article class="product-card">
+                        <div class="product-art art-two"></div>
+                        <h3>Product Two</h3>
+                        <p>Simple stock display sample.</p>
+                        <strong>$36.00</strong>
+                    </article>
+                    <article class="product-card">
+                        <div class="product-art art-three"></div>
+                        <h3>Product Three</h3>
+                        <p>Basic catalog card sample.</p>
+                        <strong>$49.00</strong>
+                    </article>
+                    <article class="product-card">
+                        <div class="product-art art-four"></div>
+                        <h3>Product Four</h3>
+                        <p>Another product placeholder.</p>
+                        <strong>$52.00</strong>
+                    </article>
+                </div>
+            </section>
+
+            <section class="about" id="about">
+                <div class="section-heading about-heading">
+                    <div>
+                        <p class="eyebrow">About this shop</p>
+                        <h2>Shop overview</h2>
+                    </div>
+                </div>
+                <p>NS 2026 is a simple shop dashboard starter for accounts, products, and inventory.</p>
+                <div class="about-links" aria-label="Admin shortcuts">
+                    <a href="#adminDashboard">Admin dashboard</a>
+                    <a href="#productPage">Add product</a>
+                    <a href="#itemManager">Item list</a>
+                    <a href="#userManager">User management</a>
+                </div>
+            </section>
+
+            <section class="admin-dashboard" id="adminDashboard">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Admin dashboard</p>
+                        <h2>Products overview</h2>
+                    </div>
+                </div>
+
+                <div class="dashboard-card top-action-card" id="addProductCard">
+                    <div>
+                        <p class="eyebrow">Create product</p>
+                        <h3>Add product on a separate page</h3>
+                        <p>Open the product composer, save the item, then return here automatically.</p>
+                    </div>
+                    <button class="submit action-button" type="button" id="openProductPageBtn">Add product</button>
+                </div>
+
+                <div class="product-list-panel" id="itemManager">
+                    <div class="list-head">
+                        <h3>Product Lists</h3>
+                        <button id="reloadProducts" type="button">Refresh</button>
+                    </div>
+                    <div class="inventory-table" id="productList"></div>
+                </div>
+
+                <div class="product-list-panel user-management-panel" id="userManager">
+                    <div class="list-head">
+                        <h3>User Management</h3>
+                        <button id="reloadUsers" type="button">Refresh</button>
+                    </div>
+                    <div class="inventory-table user-table" id="userList"></div>
+                </div>
+            </section>
+
+            <section class="product-page hidden" id="productPage">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Product composer</p>
+                        <h2>Create or edit a product</h2>
+                    </div>
+                </div>
+
+                <div class="admin-layout single-column-layout">
+                    <form class="admin-form" id="productForm">
+                        <input id="productId" name="item_id" type="hidden">
+
+                        <label class="field">
+                            <span>Product name</span>
+                            <input id="productDescription" name="description" type="text" placeholder="Sample product" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Product image</span>
+                            <input id="productImage" name="image" type="file" accept="image/png, image/jpeg, image/jpg">
+                        </label>
+
+                        <div class="form-grid">
+                            <label class="field">
+                                <span>Cost Price</span>
+                                <input id="productCost" name="cost_price" type="number" min="0" step="0.01" placeholder="12.00" required>
+                            </label>
+
+                            <label class="field">
+                                <span>Sell Price</span>
+                                <input id="productSell" name="sell_price" type="number" min="0" step="0.01" placeholder="24.00" required>
+                            </label>
+                        </div>
+
+                        <label class="field">
+                            <span>Quantity</span>
+                            <input id="productQuantity" name="quantity" type="number" min="0" step="1" placeholder="10">
+                        </label>
+
+                        <button class="submit" type="submit" id="productSubmit">Add product</button>
+                        <button class="ghost-button" type="button" id="cancelEditBtn">Back to dashboard</button>
+                        <p id="productMessage" class="message"></p>
+                    </form>
+                </div>
+            </section>
+
+            <section class="admin-section" id="admin">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Admin menu</p>
+                        <h2>Admin index</h2>
+                    </div>
+                </div>
+                <p class="admin-note">Use the product dashboard for inventory and the separate product composer for create and edit actions.</p>
+            </section>
+
+            <footer class="site-footer">
+                <span>NS 2026</span>
+                <span>Simple shop homepage</span>
+            </footer>
+        </section>
+    </main>
+
+    <script src="/app.js"></script>
+</body>
+</html>
