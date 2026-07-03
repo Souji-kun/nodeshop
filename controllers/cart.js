@@ -3,6 +3,8 @@ const Cart = db.Cart;
 const CartItem = db.CartItem;
 const Item = db.Item;
 const Stock = db.Stock;
+const Customer = db.Customer;
+const sequelize = db.sequelize;
 
 // Helper function to get or create cart for customer/session
 const getOrCreateCart = async (customerId = null, sessionId = null) => {
@@ -23,42 +25,58 @@ const getOrCreateCart = async (customerId = null, sessionId = null) => {
     return cart;
 };
 
+const buildCartResponse = (cart, cartItems) => {
+    const subtotal = cartItems.reduce((sum, item) => {
+        return sum + (Number(item.Item.sell_price) * Number(item.quantity));
+    }, 0);
+
+    const shipping = cartItems.length > 0 ? 100 : 0;
+    const total = subtotal + shipping;
+
+    return {
+        cart_id: cart.cart_id,
+        items: cartItems,
+        itemCount: cartItems.length,
+        totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        subtotal: subtotal.toFixed(2),
+        shipping: shipping.toFixed(2),
+        total: total.toFixed(2)
+    };
+};
+
+const loadCustomerCart = async (customerId, sessionId = null) => {
+    const cart = await getOrCreateCart(customerId, sessionId);
+
+    const cartItems = await CartItem.findAll({
+        where: { cart_id: cart.cart_id },
+        include: [
+            {
+                model: Item,
+                attributes: ['item_id', 'description', 'sell_price', 'img_path'],
+                include: [{ model: Stock, attributes: ['quantity'] }]
+            }
+        ],
+        order: [['cartitem_id', 'ASC']]
+    });
+
+    return { cart, cartItems };
+};
+
 // Get cart with items
 exports.getCart = async (req, res) => {
     try {
         const customerId = req.user?.customer_id;
         const sessionId = req.sessionID;
-        
-        const cart = await getOrCreateCart(customerId, sessionId);
+
+        const { cart, cartItems } = await loadCustomerCart(customerId, sessionId);
         
         if (!cart) {
             return res.status(404).json({ error: 'Cart not found' });
         }
         
-        const cartItems = await CartItem.findAll({
-            where: { cart_id: cart.cart_id },
-            include: [
-                {
-                    model: Item,
-                    attributes: ['item_id', 'description', 'sell_price', 'img_path'],
-                    include: [{ model: Stock, attributes: ['quantity'] }]
-                }
-            ]
-        });
-        
-        const total = cartItems.reduce((sum, item) => {
-            return sum + (Number(item.Item.sell_price) * item.quantity);
-        }, 0);
-        
         return res.status(200).json({
             success: true,
-            cart: {
-                cart_id: cart.cart_id,
-                items: cartItems,
-                itemCount: cartItems.length,
-                totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
-                total: total.toFixed(2)
-            }
+            cart: buildCartResponse(cart, cartItems)
         });
     } catch (error) {
         console.log(error);
@@ -71,7 +89,6 @@ exports.addToCart = async (req, res) => {
     try {
         const { itemId, quantity } = req.body;
         const customerId = req.user?.customer_id;
-        const sessionId = req.sessionID;
         
         if (!itemId || !quantity || quantity < 1) {
             return res.status(400).json({ error: 'Invalid item_id or quantity' });
@@ -91,8 +108,7 @@ exports.addToCart = async (req, res) => {
             });
         }
         
-        // Get or create cart
-        const cart = await getOrCreateCart(customerId, sessionId);
+        const cart = await getOrCreateCart(customerId, null);
         
         // Check if item already in cart
         let cartItem = await CartItem.findOne({
@@ -126,7 +142,8 @@ exports.addToCart = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Item added to cart',
-            cartItem: cartItem
+            cartItem: cartItem,
+            cart: (await loadCustomerCart(customerId)).cartItems
         });
     } catch (error) {
         console.log(error);
@@ -139,14 +156,13 @@ exports.updateCartItem = async (req, res) => {
     try {
         const { cartItemId, quantity } = req.body;
         const customerId = req.user?.customer_id;
-        const sessionId = req.sessionID;
         
         if (!cartItemId || quantity < 1) {
             return res.status(400).json({ error: 'Invalid cartitem_id or quantity' });
         }
         
         // Get cart
-        const cart = await getOrCreateCart(customerId, sessionId);
+        const cart = await getOrCreateCart(customerId, null);
         
         // Find and update cart item
         const cartItem = await CartItem.findOne({
@@ -180,7 +196,8 @@ exports.updateCartItem = async (req, res) => {
         
         return res.status(200).json({
             success: true,
-            message: 'Cart item updated'
+            message: 'Cart item updated',
+            cart: (await loadCustomerCart(customerId)).cartItems
         });
     } catch (error) {
         console.log(error);
@@ -193,14 +210,13 @@ exports.removeFromCart = async (req, res) => {
     try {
         const { cartItemId } = req.body;
         const customerId = req.user?.customer_id;
-        const sessionId = req.sessionID;
         
         if (!cartItemId) {
             return res.status(400).json({ error: 'cartitem_id is required' });
         }
         
         // Get cart
-        const cart = await getOrCreateCart(customerId, sessionId);
+        const cart = await getOrCreateCart(customerId, null);
         
         // Find and delete cart item
         const cartItem = await CartItem.findOne({
@@ -218,7 +234,8 @@ exports.removeFromCart = async (req, res) => {
         
         return res.status(200).json({
             success: true,
-            message: 'Item removed from cart'
+            message: 'Item removed from cart',
+            cart: (await loadCustomerCart(customerId)).cartItems
         });
     } catch (error) {
         console.log(error);
@@ -230,10 +247,9 @@ exports.removeFromCart = async (req, res) => {
 exports.clearCart = async (req, res) => {
     try {
         const customerId = req.user?.customer_id;
-        const sessionId = req.sessionID;
         
         // Get cart
-        const cart = await getOrCreateCart(customerId, sessionId);
+        const cart = await getOrCreateCart(customerId, null);
         
         // Delete all cart items
         await CartItem.destroy({ where: { cart_id: cart.cart_id } });
@@ -243,7 +259,8 @@ exports.clearCart = async (req, res) => {
         
         return res.status(200).json({
             success: true,
-            message: 'Cart cleared'
+            message: 'Cart cleared',
+            cart: []
         });
     } catch (error) {
         console.log(error);
@@ -294,10 +311,13 @@ exports.mergeCart = async (req, res) => {
         
         // Update customer cart timestamp
         await customerCart.update({ updated_at: new Date() });
+
+        const { cartItems } = await loadCustomerCart(customerId);
         
         return res.status(200).json({
             success: true,
-            message: 'Cart merged successfully'
+            message: 'Cart merged successfully',
+            cart: buildCartResponse(customerCart, cartItems)
         });
     } catch (error) {
         console.log(error);

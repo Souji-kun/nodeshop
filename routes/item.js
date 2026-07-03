@@ -8,13 +8,13 @@ const { getAllItems,
     updateItem,
     deleteItem,
     restoreItem } = require('../controllers/item')
-const { isAuthenticatedUser } = require('../middlewares/auth')
+const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth')
 
 router.get('/items', getAllItems)
 router.get('/items/:id', getSingleItem)
-router.post('/items', isAuthenticatedUser, upload.single('image'), createItem)
-router.put('/items/:id', isAuthenticatedUser, upload.single('image'), updateItem)
-router.delete('/items/:id', isAuthenticatedUser, deleteItem)
-router.patch('/items/:id/restore', isAuthenticatedUser, restoreItem)
+router.post('/items', isAuthenticatedUser, authorizeRoles('admin'), upload.single('image'), createItem)
+router.put('/items/:id', isAuthenticatedUser, authorizeRoles('admin'), upload.single('image'), updateItem)
+router.delete('/items/:id', isAuthenticatedUser, authorizeRoles('admin'), deleteItem)
+router.patch('/items/:id/restore', isAuthenticatedUser, authorizeRoles('admin'), restoreItem)
 
 module.exports = router;

@@ -21,10 +21,6 @@ module.exports = (sequelize, DataTypes) => {
         unit_price: {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false
-        },
-        subtotal: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
         }
     }, {
         tableName: 'orderline',

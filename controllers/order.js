@@ -10,6 +10,7 @@ const sendEmail = require('../utils/sendEmail');
 
 exports.createOrder = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
+    const SHIPPING_FEE = 100;
     
     try {
         const { cart } = req.body;
@@ -47,25 +48,24 @@ exports.createOrder = async (req, res, next) => {
                 await transaction.rollback();
                 return res.status(404).json({ error: `Item ${cartItem.item_id} not found` });
             }
-            
+
             const subtotal = Number(item.sell_price) * Number(cartItem.quantity);
             totalAmount += subtotal;
-            
+
             orderItems.push({
                 item_id: cartItem.item_id,
                 quantity: cartItem.quantity,
-                unit_price: item.sell_price,
-                subtotal: subtotal
+                unit_price: item.sell_price
             });
         }
+
+        const grandTotal = totalAmount + SHIPPING_FEE;
         
         // Create order
         const order = await Order.create({
             customer_id: customer.customer_id,
             date_placed: new Date(),
-            status: 'pending',
-            shipping: 100,
-            total_amount: totalAmount
+            status: 'pending'
         }, { transaction });
         
         // Create order items
@@ -91,7 +91,7 @@ exports.createOrder = async (req, res, next) => {
         
         // Send confirmation email
         try {
-            const message = `Your order #${order.order_id} has been placed successfully. Total amount: $${totalAmount.toFixed(2)}`;
+            const message = `Your order #${order.order_id} has been placed successfully. Total amount: $${grandTotal.toFixed(2)}`;
             await sendEmail({
                 email: customer.User.email,
                 subject: 'Order Confirmation',
@@ -105,7 +105,9 @@ exports.createOrder = async (req, res, next) => {
             success: true,
             order_id: order.order_id,
             date_placed: order.date_placed,
-            total_amount: order.total_amount,
+            subtotal: totalAmount.toFixed(2),
+            shipping: SHIPPING_FEE.toFixed(2),
+            total_amount: grandTotal.toFixed(2),
             message: 'Order placed successfully'
         });
     } catch (error) {
@@ -142,10 +144,25 @@ exports.getOrders = async (req, res) => {
             ],
             order: [['date_placed', 'DESC']]
         });
+
+        const ordersWithTotals = orders.map((order) => {
+            const plainOrder = order.get({ plain: true });
+            const subtotal = plainOrder.OrderItems.reduce((sum, line) => {
+                const lineTotal = Number(line.unit_price) * Number(line.quantity);
+                return sum + lineTotal;
+            }, 0);
+
+            return {
+                ...plainOrder,
+                subtotal: subtotal.toFixed(2),
+                shipping: '100.00',
+                total_amount: (subtotal + 100).toFixed(2)
+            };
+        });
         
         return res.status(200).json({
             success: true,
-            orders: orders
+            orders: ordersWithTotals
         });
     } catch (error) {
         console.log(error);

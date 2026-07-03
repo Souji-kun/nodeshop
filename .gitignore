@@ -3,4 +3,4 @@
 # misc
 /config/.env
 /.env
-/images
+/nodetest.sql

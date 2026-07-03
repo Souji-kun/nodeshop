@@ -22,16 +22,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM('pending', 'shipped', 'delivered', 'cancelled'),
             allowNull: false,
             defaultValue: 'pending'
-        },
-        shipping: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-            defaultValue: 0
-        },
-        total_amount: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-            defaultValue: 0
         }
     }, {
         tableName: 'orderinfo',

@@ -15,7 +15,8 @@ const formatUser = (user) => ({
     name: user.name,
     email: user.email,
     role: user.role || 'customer',
-    deleted_at: user.deleted_at || null
+    deleted_at: user.deleted_at || null,
+    token: user.token || null
 });
 
 const registerUser = async (req, res) => {
@@ -38,11 +39,14 @@ const registerUser = async (req, res) => {
             role: 'customer'
         });
 
+        const token = signToken(user);
+        await user.update({ token });
+
         return res.status(201).json({
             success: true,
             message: 'User registered successfully',
             user: formatUser(user),
-            token: signToken(user)
+            token
         });
     } catch (error) {
         console.log(error);
@@ -79,11 +83,14 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid email or password' });
         }
 
+        const token = signToken(user);
+        await user.update({ token });
+
         return res.status(200).json({
             success: true,
             message: 'Welcome back',
             user: formatUser(user),
-            token: signToken(user)
+            token
         });
     } catch (error) {
         console.log(error);
@@ -152,7 +159,7 @@ const deactivateUser = async (req, res) => {
         }
 
         const timestamp = new Date();
-        await user.update({ deleted_at: timestamp });
+        await user.update({ deleted_at: timestamp, token: null });
 
         return res.status(200).json({
             success: true,
@@ -173,7 +180,7 @@ const getCurrentUser = async (req, res) => {
                 id: req.user.id,
                 deleted_at: null
             },
-            attributes: ['id', 'name', 'email', 'role', 'created_at', 'updated_at']
+            attributes: ['id', 'name', 'email', 'role', 'token', 'created_at', 'updated_at']
         });
 
         if (!user) {
@@ -190,11 +197,22 @@ const getCurrentUser = async (req, res) => {
     }
 };
 
-const logoutUser = (req, res) => {
-    return res.status(200).json({
-        success: true,
-        message: 'Logged out successfully'
-    });
+const logoutUser = async (req, res) => {
+    try {
+        const user = await User.findOne({ where: { id: req.user.id, deleted_at: null } });
+
+        if (user) {
+            await user.update({ token: null });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error logging out', details: error.message });
+    }
 };
 
 const getAllUsers = async (req, res) => {

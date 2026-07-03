@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plush Palette Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="page-shell">
+        <section class="shell" id="authView">
+            <div class="panel auth-panel">
+                <div class="brand">
+                    <span>Plush Palette</span>
+                    <small>Well known plushies from the medias you love.</small>
+                </div>
+
+                <div class="auth-hero">
+                    <p class="eyebrow">Shop login</p>
+                    <h1>Collect plushies from every fandom.</h1>
+                    <p>Sign in to browse anime, game, movie, and original plush drops in one cheerful store.</p>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active" type="button" data-mode="login">Login</button>
+                    <button class="tab" type="button" data-mode="register">Register</button>
+                </div>
+
+                <form id="authForm">
+                    <label class="field name-field hidden">
+                        <span>Name</span>
+                        <input id="name" type="text" autocomplete="name" placeholder="Mina Plushlover">
+                    </label>
+
+                    <label class="field">
+                        <span>Email</span>
+                        <input id="email" type="email" autocomplete="email" placeholder="mina@example.com" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required>
+                    </label>
+
+                    <button class="submit" type="submit">Login</button>
+                    <p id="message" class="message"></p>
+                </form>
+            </div>
+        </section>
+
+        <section class="home-page hidden" id="homePage">
+            <header class="site-header">
+                <a class="logo" href="#home">Plush Palette</a>
+                <nav class="main-menu" aria-label="Main menu">
+                    <a href="#home">Home</a>
+                    <a href="#products">Plushies</a>
+                    <a href="#cart" id="cartLink" class="cart-link">
+                        <span>Cart</span>
+                        <span id="cartCount" class="cart-badge">0</span>
+                    </a>
+                    <div class="menu-item admin-only">
+                        <a href="#about">About</a>
+                        <div class="sub-menu">
+                            <a href="#about">Company</a>
+                            <a href="#adminDashboard">Admin index</a>
+                            <a href="#itemManager">Items</a>
+                            <a href="#productPage">Add product</a>
+                            <a href="#team">Team</a>
+                            <a href="#contact">Contact</a>
+                        </div>
+                    </div>
+                    <a class="admin-only" href="#adminDashboard">Admin</a>
+                </nav>
+            </header>
+
+            <section class="hero" id="home">
+                <div class="hero-copy">
+                    <p class="eyebrow">Fresh arrivals</p>
+                    <h1 id="accountName">Welcome to the fluffiest shop</h1>
+                    <p id="accountEmail"></p>
+                    <p class="hero-blurb">Browse collectible plushies inspired by anime icons, gaming legends, films, and cozy original mascots.</p>
+                </div>
+                <div class="hero-card">
+                    <div class="hero-orb orb-one"></div>
+                    <div class="hero-orb orb-two"></div>
+                    <div class="hero-orb orb-three"></div>
+                    <div class="hero-stat">
+                        <span>Curated drops</span>
+                        <strong>Soft, limited, lovable</strong>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="ghost" type="button">Logout</button>
+            </section>
+
+            <section class="stats-grid" aria-label="Shop highlights">
+                <article class="stat-card">
+                    <span>Anime plush</span>
+                    <strong>Chibi favorites</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Game plush</span>
+                    <strong>Pixel heroes, soft form</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Movie plush</span>
+                    <strong>Fandom shelf candy</strong>
+                </article>
+            </section>
+
+            <section class="products-section" id="products">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Featured plushies</p>
+                        <h2>Scroll through the cutest drops</h2>
+                    </div>
+                    <div class="carousel-controls">
+                        <button id="prevProduct" type="button" aria-label="Previous product">&lt;</button>
+                        <button id="nextProduct" type="button" aria-label="Next product">&gt;</button>
+                    </div>
+                </div>
+
+                <div class="carousel" id="productCarousel">
+                    <article class="product-card featured-product-card" id="featuredProductCard">
+                        <div class="product-art art-one" id="featuredProductArt"></div>
+                        <h3 id="featuredProductName">No product yet</h3>
+                        <p id="featuredProductDescription">Create a product to display it here.</p>
+                        <strong id="featuredProductPrice">$0.00</strong>
+                    </article>
+                </div>
+            </section>
+
+            <section class="cart-section hidden" id="cartSection">
+                <div class="section-heading cart-heading">
+                    <div>
+                        <p class="eyebrow">Shopping cart</p>
+                        <h2>Review your plush haul</h2>
+                    </div>
+                    <button id="closeCartBtn" type="button">×</button>
+                </div>
+                <div class="cart-panel">
+                    <div class="cart-items" id="cartItems"></div>
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <strong id="cartSubtotal">$0.00</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping:</span>
+                            <strong>$100.00</strong>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <strong id="cartTotal">$100.00</strong>
+                        </div>
+                        <button id="checkoutBtn" type="button" class="submit">Checkout</button>
+                        <button id="continueShopping" type="button" class="ghost-button">Continue Shopping</button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cart-backdrop hidden" id="cartBackdrop"></div>
+
+            <section class="about" id="about">
+                <div class="section-heading about-heading">
+                    <div>
+                        <p class="eyebrow">About the shop</p>
+                        <h2>Built for collectors and cozy gifts</h2>
+                    </div>
+                </div>
+                <p>Plush Palette is a cheerful storefront for fans who want a softer shelf, a brighter desk, and a cart full of characters they love.</p>
+                <div class="about-links" aria-label="Shop links">
+                    <a href="#products">Browse plushies</a>
+                    <a href="#about">About the brand</a>
+                    <a href="#home">Back to top</a>
+                </div>
+            </section>
+
+            <section class="admin-dashboard admin-only hidden" id="adminDashboard">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Admin dashboard</p>
+                        <h2>Inventory control</h2>
+                    </div>
+                </div>
+
+                <div class="dashboard-card top-action-card" id="addProductCard">
+                    <div>
+                        <p class="eyebrow">Create product</p>
+                        <h3>Add a new plush drop</h3>
+                        <p>Open the product composer, save the item, then return here automatically.</p>
+                    </div>
+                    <button class="submit action-button" type="button" id="openProductPageBtn">Add product</button>
+                </div>
+
+                <div class="product-list-panel" id="itemManager">
+                    <div class="list-head">
+                        <h3>Product list</h3>
+                        <button id="reloadProducts" type="button">Refresh</button>
+                    </div>
+                    <div class="inventory-table" id="productList"></div>
+                </div>
+
+                <div class="product-list-panel user-management-panel" id="userManager">
+                    <div class="list-head">
+                        <h3>User management</h3>
+                        <button id="reloadUsers" type="button">Refresh</button>
+                    </div>
+                    <div class="inventory-table user-table" id="userList"></div>
+                </div>
+            </section>
+
+            <section class="product-page admin-only hidden" id="productPage">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Product composer</p>
+                        <h2>Create or edit a plushie</h2>
+                    </div>
+                </div>
+
+                <div class="admin-layout single-column-layout">
+                    <form class="admin-form" id="productForm">
+                        <input id="productId" name="item_id" type="hidden">
+
+                        <label class="field">
+                            <span>Product name</span>
+                            <input id="productDescription" name="description" type="text" placeholder="Moon Bunny plush" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Product image</span>
+                            <input id="productImage" name="image" type="file" accept="image/png, image/jpeg, image/jpg">
+                        </label>
+
+                        <div class="form-grid">
+                            <label class="field">
+                                <span>Cost Price</span>
+                                <input id="productCost" name="cost_price" type="number" min="0" step="0.01" placeholder="12.00" required>
+                            </label>
+
+                            <label class="field">
+                                <span>Sell Price</span>
+                                <input id="productSell" name="sell_price" type="number" min="0" step="0.01" placeholder="24.00" required>
+                            </label>
+                        </div>
+
+                        <label class="field">
+                            <span>Quantity</span>
+                            <input id="productQuantity" name="quantity" type="number" min="0" step="1" placeholder="10">
+                        </label>
+
+                        <button class="submit" type="submit" id="productSubmit">Add product</button>
+                        <button class="ghost-button" type="button" id="cancelEditBtn">Back to dashboard</button>
+                        <p id="productMessage" class="message"></p>
+                    </form>
+                </div>
+            </section>
+
+            <section class="admin-section admin-only hidden" id="admin">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Admin menu</p>
+                        <h2>Admin index</h2>
+                    </div>
+                </div>
+                <p class="admin-note">Use the dashboard for inventory and the separate product composer for create and edit actions.</p>
+            </section>
+
+            <footer class="site-footer">
+                <span>Plush Palette</span>
+                <span>Soft goods for every fandom</span>
+            </footer>
+        </section>
+    </main>
+
+    <script src="/app.js"></script>
+</body>
+</html>
