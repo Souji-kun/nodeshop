@@ -17,6 +17,18 @@ const ensureItemSoftDeleteColumn = async () => {
     }
 };
 
+const ensureItemCategoryColumn = async () => {
+    const [rows] = await db.sequelize.query(
+        "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'item' AND COLUMN_NAME = 'category'"
+    );
+
+    const columnCount = Number(rows?.[0]?.columnCount || 0);
+
+    if (columnCount === 0) {
+        await db.sequelize.query("ALTER TABLE item ADD COLUMN category VARCHAR(120) NOT NULL DEFAULT 'Uncategorized' AFTER item_id");
+    }
+};
+
 const ensureUserRoleColumn = async () => {
     const [rows] = await db.sequelize.query(
         "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'"
@@ -39,6 +51,10 @@ const ensureUserTokenColumn = async () => {
     if (columnCount === 0) {
         await db.sequelize.query("ALTER TABLE users ADD COLUMN token TEXT NULL AFTER password");
     }
+};
+
+const ensureOrderStatusColumn = async () => {
+    await db.sequelize.query("ALTER TABLE orderinfo MODIFY COLUMN status VARCHAR(30) NOT NULL DEFAULT 'pending'");
 };
 
 const ensureAdminUser = async () => {
@@ -95,8 +111,10 @@ const startServer = async () => {
 
     await db.sequelize.authenticate();
     await ensureItemSoftDeleteColumn();
+    await ensureItemCategoryColumn();
     await ensureUserRoleColumn();
     await ensureUserTokenColumn();
+    await ensureOrderStatusColumn();
     await dropDerivedOrderColumns();
     await db.sequelize.sync();
     await ensureAdminUser();

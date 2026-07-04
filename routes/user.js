@@ -7,6 +7,7 @@ const { registerUser,
     updateUser,
     deactivateUser,
     getCurrentUser,
+    getProfile,
     logoutUser,
     getAllUsers,
     updateUserRole,
@@ -20,6 +21,7 @@ const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth')
 router.post('/register', registerUser)
 router.post('/login', loginUser)
 router.get('/me', isAuthenticatedUser, getCurrentUser)
+router.get('/profile', isAuthenticatedUser, getProfile)
 router.post('/logout', isAuthenticatedUser, logoutUser)
 router.post('/update-profile', isAuthenticatedUser, upload.single('image'), updateUser)
 router.delete('/deactivate', isAuthenticatedUser, deactivateUser)

@@ -23,7 +23,7 @@ const serializeItem = (item) => {
 exports.getAllItems = async (req, res) => {
     try {
         const items = await Item.findAll({
-            order: [['item_id', 'DESC']],
+            order: [['category', 'ASC'], ['item_id', 'DESC']],
             include: [{ model: Stock }]
         });
         return res.status(200).json({ rows: items.map(serializeItem) });
@@ -56,9 +56,10 @@ exports.createItem = async (req, res, next) => {
     const transaction = await sequelize.transaction();
 
     try {
-        const { description, cost_price, sell_price, quantity } = req.body;
+        const { category, description, cost_price, sell_price, quantity } = req.body;
         const imagePath = req.file?.path.replace(/\\/g, "/") || DEFAULT_IMAGE_PATH;
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
+        const itemCategory = String(category || '').trim() || 'Uncategorized';
 
         if (!description || !cost_price || !sell_price) {
             await transaction.rollback();
@@ -67,6 +68,7 @@ exports.createItem = async (req, res, next) => {
 
         const item = await Item.create(
             {
+                category: itemCategory,
                 description,
                 cost_price,
                 sell_price,
@@ -106,7 +108,7 @@ exports.updateItem = async (req, res, next) => {
 
     try {
         const { id } = req.params;
-        const { description, cost_price, sell_price, quantity } = req.body;
+        const { category, description, cost_price, sell_price, quantity } = req.body;
         const existingItem = await Item.findByPk(id);
 
         if (!existingItem || existingItem.deleted_at) {
@@ -116,6 +118,7 @@ exports.updateItem = async (req, res, next) => {
 
         const imagePath = req.file?.path.replace(/\\/g, "/") || existingItem.img_path || DEFAULT_IMAGE_PATH;
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
+        const itemCategory = String(category || existingItem.category || '').trim() || 'Uncategorized';
 
         if (!description || !cost_price || !sell_price) {
             await transaction.rollback();
@@ -124,6 +127,7 @@ exports.updateItem = async (req, res, next) => {
 
         await Item.update(
             {
+                category: itemCategory,
                 description,
                 cost_price,
                 sell_price,

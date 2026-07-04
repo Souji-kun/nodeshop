@@ -5,6 +5,11 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
+        category: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'Uncategorized'
+        },
         description: {
             type: DataTypes.STRING,
             allowNull: false

@@ -19,6 +19,25 @@ const formatUser = (user) => ({
     token: user.token || null
 });
 
+const formatCustomer = (customer) => {
+    if (!customer) {
+        return null;
+    }
+
+    const plainCustomer = customer.get ? customer.get({ plain: true }) : customer;
+
+    return {
+        customer_id: plainCustomer.customer_id,
+        fname: plainCustomer.fname || '',
+        lname: plainCustomer.lname || '',
+        addressline: plainCustomer.addressline || '',
+        zipcode: plainCustomer.zipcode || '',
+        phone: plainCustomer.phone || '',
+        image_path: plainCustomer.image_path || '',
+        user_id: plainCustomer.user_id
+    };
+};
+
 const registerUser = async (req, res) => {
     try {
         const { name, password, email } = req.body;
@@ -142,11 +161,41 @@ const updateUser = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
-            customer
+            customer: formatCustomer(customer)
         });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: 'Error updating profile', details: error.message });
+    }
+};
+
+const getProfile = async (req, res) => {
+    try {
+        const user = await User.findOne({
+            where: {
+                id: req.user.id,
+                deleted_at: null
+            },
+            attributes: ['id', 'name', 'email', 'role', 'token', 'created_at', 'updated_at']
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const [customer] = await Customer.findOrCreate({
+            where: { user_id: req.user.id },
+            defaults: { user_id: req.user.id }
+        });
+
+        return res.status(200).json({
+            success: true,
+            user,
+            customer: formatCustomer(customer)
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error fetching profile', details: error.message });
     }
 };
 
@@ -316,6 +365,7 @@ module.exports = {
     updateUser,
     deactivateUser,
     getCurrentUser,
+    getProfile,
     logoutUser,
     getAllUsers,
     updateUserRole,

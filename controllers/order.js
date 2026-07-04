@@ -8,6 +8,8 @@ const Customer = db.Customer;
 const User = db.User;
 const sendEmail = require('../utils/sendEmail');
 
+const allowedAdminStatuses = ['processing', 'completed', 'cancelled'];
+
 exports.createOrder = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     const SHIPPING_FEE = 100;
@@ -167,5 +169,77 @@ exports.getOrders = async (req, res) => {
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: 'Error fetching orders', details: error.message });
+    }
+};
+
+exports.getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.findAll({
+            include: [
+                {
+                    model: Customer,
+                    include: [User]
+                },
+                {
+                    model: OrderItem,
+                    include: [Item]
+                }
+            ],
+            order: [['date_placed', 'DESC']]
+        });
+
+        const ordersWithTotals = orders.map((order) => {
+            const plainOrder = order.get({ plain: true });
+            const subtotal = plainOrder.OrderItems.reduce((sum, line) => {
+                const lineTotal = Number(line.unit_price) * Number(line.quantity);
+                return sum + lineTotal;
+            }, 0);
+
+            return {
+                ...plainOrder,
+                subtotal: subtotal.toFixed(2),
+                shipping: '100.00',
+                total_amount: (subtotal + 100).toFixed(2)
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            orders: ordersWithTotals
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error fetching admin orders', details: error.message });
+    }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!allowedAdminStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid order status' });
+        }
+
+        const order = await Order.findByPk(id);
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        await order.update({
+            status,
+            date_shipped: status === 'completed' ? new Date() : order.date_shipped
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Order status updated successfully',
+            order: order.get({ plain: true })
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Error updating order status', details: error.message });
     }
 };

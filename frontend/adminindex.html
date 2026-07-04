@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plush Palette Shop</title>
+    <title>Plush Palette Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
+<body data-frontend="admin">
     <main class="page-shell">
         <section class="shell" id="authView">
             <div class="panel auth-panel">
@@ -19,9 +19,9 @@
                 </div>
 
                 <div class="auth-hero">
-                    <p class="eyebrow">Shop login</p>
-                    <h1>Collect plushies from every fandom.</h1>
-                    <p>Sign in to browse anime, game, movie, and original plush drops in one cheerful store.</p>
+                    <p class="eyebrow">Admin login</p>
+                    <h1>Collect and manage plushies from every fandom.</h1>
+                    <p>Sign in to manage catalog, orders, users, and your profile from one dashboard-first storefront.</p>
                 </div>
 
                 <div class="tabs">
@@ -53,15 +53,16 @@
 
         <section class="home-page hidden" id="homePage">
             <header class="site-header">
-                <a class="logo" href="#home">Plush Palette</a>
+                <a class="logo" href="#adminDashboard">Plush Palette</a>
                 <nav class="main-menu" aria-label="Main menu">
-                    <a href="#home">Home</a>
-                    <a href="#products">Plushies</a>
-                    <a href="#cart" id="cartLink" class="cart-link">
+                    <a href="/index.html">Home</a>
+                    <a href="#adminDashboard">Dashboard</a>
+                    <a href="#products" class="hidden">Products</a>
+                    <a href="#cart" id="cartLink" class="cart-link hidden">
                         <span>Cart</span>
                         <span id="cartCount" class="cart-badge">0</span>
                     </a>
-                    <div class="menu-item profile-menu">
+                    <div class="menu-item hidden" id="profileMenu">
                         <a href="#profile">Profile</a>
                         <div class="sub-menu profile-sub-menu">
                             <a href="#profile">My account</a>
@@ -72,7 +73,7 @@
                         <a href="#about">About</a>
                         <div class="sub-menu">
                             <a href="#about">Company</a>
-                            <a class="admin-only" href="#adminDashboard">Admin index</a>
+                            <a class="admin-only" href="#adminDashboard">Admin dashboard</a>
                             <a class="admin-only" href="#itemManager">Items</a>
                             <a class="admin-only" href="#productPage">Add product</a>
                             <a href="#team">Team</a>
@@ -85,17 +86,17 @@
             <section class="hero" id="home">
                 <div class="hero-copy">
                     <p class="eyebrow">Fresh arrivals</p>
-                    <h1 id="accountName">Welcome to the fluffiest shop</h1>
+                    <h1 id="accountName">Welcome to the dashboard</h1>
                     <p id="accountEmail"></p>
-                    <p class="hero-blurb">Browse collectible plushies inspired by anime icons, gaming legends, films, and cozy original mascots.</p>
+                    <p class="hero-blurb">Browse and manage plush inventory, orders, and user profiles with the same storefront system.</p>
                 </div>
                 <div class="hero-card">
                     <div class="hero-orb orb-one"></div>
                     <div class="hero-orb orb-two"></div>
                     <div class="hero-orb orb-three"></div>
                     <div class="hero-stat">
-                        <span>Curated drops</span>
-                        <strong>Soft, limited, lovable</strong>
+                        <span>Admin control</span>
+                        <strong>Fast, direct, accountable</strong>
                     </div>
                 </div>
                 <button id="logoutBtn" class="ghost" type="button">Logout</button>
@@ -103,16 +104,16 @@
 
             <section class="stats-grid" aria-label="Shop highlights">
                 <article class="stat-card">
-                    <span>Anime plush</span>
-                    <strong>Chibi favorites</strong>
+                    <span>Catalog</span>
+                    <strong>Manage plush products</strong>
                 </article>
                 <article class="stat-card">
-                    <span>Game plush</span>
-                    <strong>Pixel heroes, soft form</strong>
+                    <span>Orders</span>
+                    <strong>Track and update status</strong>
                 </article>
                 <article class="stat-card">
-                    <span>Movie plush</span>
-                    <strong>Fandom shelf candy</strong>
+                    <span>Users</span>
+                    <strong>Handle accounts safely</strong>
                 </article>
             </section>
 
@@ -183,37 +184,7 @@
                 </div>
             </section>
 
-            <section class="profile-section hidden" id="profileSection">
-                <div class="section-heading profile-heading">
-                    <div>
-                        <p class="eyebrow">Your account</p>
-                        <h2>Profile and orders</h2>
-                    </div>
-                    <button id="refreshCustomerProfile" type="button">Refresh</button>
-                </div>
-
-                <div class="profile-layout">
-                    <article class="dashboard-card profile-summary-card">
-                        <div class="profile-summary-copy">
-                            <p class="eyebrow">Current user</p>
-                            <h3 id="customerProfileName">Loading profile...</h3>
-                            <p id="customerProfileEmail">Verifying your session.</p>
-                            <p id="customerProfileRole" class="profile-role-chip">Customer</p>
-                        </div>
-                        <div class="profile-summary-meta" id="customerProfileMeta"></div>
-                    </article>
-
-                    <section class="orders-section">
-                        <div class="section-heading orders-heading">
-                            <div>
-                                <p class="eyebrow">Orders</p>
-                                <h3>Your purchase history</h3>
-                            </div>
-                        </div>
-                        <div class="orders-list" id="customerOrdersList"></div>
-                    </section>
-                </div>
-            </section>
+            <section class="profile-section hidden" id="profileSection"></section>
 
             <section class="admin-dashboard admin-only hidden" id="adminDashboard">
                 <div class="section-heading">
