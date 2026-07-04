@@ -1,0 +1,6 @@
+// 1: fix admin header: Home(customer homepage accessible by admin). Dashboard(admindashboard). Products(add products + product management). Orders(seems alright now). Users( seems good too). Profile( add profile edit tab with profile picture upload). Logout( put logout here).
+// 2: fix customer header: Home(customer homepage). Products( Product list by category). Profile[submenu(add profile edit tab with profile picture upload)/My orders. Logout( put logout here).
+// 1.1/2.2: search bar for products in both admin and customer header. Search by product name or category. Search results should be displayed on the same page without page reloads. Use ajax for this. add filter button tab
+// 3: upon accessing main menu for admin, only change the url route and then html body should be replaced with the new page content. No page reloads. Same for customer main menu.
+// 4: admin dashboard based on the data in the database, show the following: total number of users, total number of products, total number of orders, total revenue generated from all orders
+// 5: footer, idunno about that pagination.
