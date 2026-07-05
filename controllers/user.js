@@ -268,12 +268,22 @@ const getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll({
             order: [['id', 'DESC']],
-            attributes: ['id', 'name', 'email', 'role', 'deleted_at', 'created_at', 'updated_at']
+            attributes: ['id', 'name', 'email', 'role', 'deleted_at', 'created_at', 'updated_at'],
+            include: [{
+                model: Customer,
+                as: 'Customer',
+                attributes: ['image_path', 'fname', 'lname']
+            }]
         });
 
         return res.status(200).json({
             success: true,
-            rows: users.map(formatUser)
+            rows: users.map((user) => ({
+                ...formatUser(user),
+                image_path: user.Customer?.image_path || '',
+                fname: user.Customer?.fname || '',
+                lname: user.Customer?.lname || ''
+            }))
         });
     } catch (error) {
         console.log(error);

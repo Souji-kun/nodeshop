@@ -1,10 +1,8 @@
 
 Advance Web Application Project Requirements
 machine problems 20pts
-mp1 Laravel CRUD api 12pts
-    NodeJS CRUD api 20pts
-mp2 Laravel CRUD api 12pts
-    NodeJS CRUD api 20pts
+mp1 NodeJS CRUD api 20pts
+mp2 NodeJS CRUD api 20pts
 
 mp3 CRUD Jquery/datatables multiple file uploads for mp1 20pts
 mp4 CRUD Jquery/datatables frontend for mp2
@@ -36,9 +34,3 @@ UI/UX Design
 unit test 2 20pts
 jquery pagination (datatable pagination is not applicable) 15pts
 jquery infinite scroll (datatable pagination is not applicable) 20pts
-
-
-unit 3 40
-functional requirements completeness 10
-app complexity. added features 10
-program execution 10

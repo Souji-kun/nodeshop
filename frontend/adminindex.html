@@ -3,358 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plush Palette Admin</title>
+    <title>Plush Palette | Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body data-frontend="admin">
-    <main class="page-shell">
-        <section class="shell" id="authView">
-            <div class="panel auth-panel">
-                <div class="brand">
-                    <span>Plush Palette</span>
-                    <small>Well known plushies from the medias you love.</small>
+<body data-page="admin">
+    <div class="boot-cover" id="bootCover"></div>
+    <main class="app-shell">
+        <section class="auth-screen" id="authScreen">
+            <div class="auth-card admin-auth">
+                <p class="eyebrow">Admin access</p>
+                <h1>Manage plush inventory and orders.</h1>
+                <p class="muted">Sign in as an admin to control products, users, and revenue summaries.</p>
+
+                <div class="auth-tabs">
+                    <button type="button" class="auth-tab active" data-auth-tab="login">Login</button>
+                    <button type="button" class="auth-tab" data-auth-tab="register">Register</button>
                 </div>
 
-                <div class="auth-hero">
-                    <p class="eyebrow">Admin login</p>
-                    <h1>Collect and manage plushies from every fandom.</h1>
-                    <p>Sign in to manage catalog, orders, users, and your profile from one dashboard-first storefront.</p>
-                </div>
-
-                <div class="tabs">
-                    <button class="tab active" type="button" data-mode="login">Login</button>
-                    <button class="tab" type="button" data-mode="register">Register</button>
-                </div>
-
-                <form id="authForm">
-                    <label class="field name-field hidden">
+                <form id="authForm" class="auth-form" novalidate>
+                    <label class="field hidden" id="nameField">
                         <span>Name</span>
-                        <input id="name" type="text" autocomplete="name" placeholder="Mina Plushlover">
+                        <input id="nameInput" type="text" autocomplete="name" placeholder="Admin name">
                     </label>
-
                     <label class="field">
                         <span>Email</span>
-                        <input id="email" type="email" autocomplete="email" placeholder="mina@example.com" required>
+                        <input id="emailInput" type="text" autocomplete="email" placeholder="admin@example.com">
                     </label>
-
                     <label class="field">
                         <span>Password</span>
-                        <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required>
+                        <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Your password">
                     </label>
-
-                    <button class="submit" type="submit">Login</button>
-                    <p id="message" class="message"></p>
+                    <button type="submit" class="primary-btn" id="authSubmit">Login</button>
+                    <p class="form-message" id="authMessage"></p>
                 </form>
             </div>
         </section>
 
-        <section class="home-page hidden" id="homePage">
-            <header class="site-header">
-                <a class="logo" href="#adminDashboard">Plush Palette</a>
-                <nav class="main-menu" aria-label="Main menu">
-                    <a href="/index.html">Home</a>
-                    <a href="#adminDashboard">Dashboard</a>
-                    <a href="#products" class="hidden">Products</a>
-                    <a href="#cart" id="cartLink" class="cart-link hidden">
-                        <span>Cart</span>
-                        <span id="cartCount" class="cart-badge">0</span>
-                    </a>
-                    <div class="menu-item hidden" id="profileMenu">
-                        <a href="#profile">Profile</a>
-                        <div class="sub-menu profile-sub-menu">
-                            <a href="#profile">My account</a>
-                            <a href="#profile">My orders</a>
-                        </div>
-                    </div>
-                    <div class="menu-item">
-                        <a href="#about">About</a>
-                        <div class="sub-menu">
-                            <a href="#about">Company</a>
-                            <a class="admin-only" href="#adminDashboard">Admin dashboard</a>
-                            <a class="admin-only" href="#itemManager">Items</a>
-                            <a class="admin-only" href="#productPage">Add product</a>
-                            <a href="#team">Team</a>
-                            <a href="#contact">Contact</a>
-                        </div>
-                    </div>
+        <section class="app-page hidden" id="adminApp">
+            <header class="topbar">
+                <div>
+                    <p class="brand">Plush Palette Admin</p>
+                    <span class="brand-subtitle">Inventory and order control</span>
+                </div>
+                <nav class="topnav" aria-label="Admin navigation">
+                    <button type="button" class="pill-btn nav-route active" data-route="dashboard">Dashboard</button>
+                    <button type="button" class="pill-btn nav-route" data-route="products">Products</button>
+                    <button type="button" class="pill-btn nav-route" data-route="orders">Orders</button>
+                    <button type="button" class="pill-btn nav-route" data-route="users">Users</button>
+                    <button type="button" class="pill-btn nav-route" data-route="charts">Charts</button>
+                    <button type="button" class="pill-btn nav-route" data-route="profile">Profile</button>
+                    <button type="button" class="pill-btn" id="logoutBtn">Logout</button>
                 </nav>
             </header>
 
-            <section class="hero" id="home">
+            <section class="hero admin-hero">
                 <div class="hero-copy">
-                    <p class="eyebrow">Fresh arrivals</p>
-                    <h1 id="accountName">Welcome to the dashboard</h1>
-                    <p id="accountEmail"></p>
-                    <p class="hero-blurb">Browse and manage plush inventory, orders, and user profiles with the same storefront system.</p>
-                </div>
-                <div class="hero-card">
-                    <div class="hero-orb orb-one"></div>
-                    <div class="hero-orb orb-two"></div>
-                    <div class="hero-orb orb-three"></div>
-                    <div class="hero-stat">
-                        <span>Admin control</span>
-                        <strong>Fast, direct, accountable</strong>
-                    </div>
-                </div>
-                <button id="logoutBtn" class="ghost" type="button">Logout</button>
-            </section>
-
-            <section class="stats-grid" aria-label="Shop highlights">
-                <article class="stat-card">
-                    <span>Catalog</span>
-                    <strong>Manage plush products</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Orders</span>
-                    <strong>Track and update status</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Users</span>
-                    <strong>Handle accounts safely</strong>
-                </article>
-            </section>
-
-            <section class="products-section" id="products">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">Featured plushies</p>
-                        <h2>Shop by category</h2>
-                    </div>
-                </div>
-
-                <div class="featured-product-layout">
-                    <article class="product-card featured-product-card" id="featuredProductCard">
-                        <div class="product-art art-one" id="featuredProductArt"></div>
-                        <h3 id="featuredProductName">No product yet</h3>
-                        <p id="featuredProductDescription">Create a product to display it here.</p>
-                        <strong id="featuredProductPrice">$0.00</strong>
-                    </article>
-                </div>
-
-                <div class="product-sections" id="productSections"></div>
-            </section>
-
-            <section class="cart-section hidden" id="cartSection">
-                <div class="section-heading cart-heading">
-                    <div>
-                        <p class="eyebrow">Shopping cart</p>
-                        <h2>Review your plush haul</h2>
-                    </div>
-                    <button id="closeCartBtn" type="button">×</button>
-                </div>
-                <div class="cart-panel">
-                    <div class="cart-items" id="cartItems"></div>
-                    <div class="cart-summary">
-                        <div class="summary-row">
-                            <span>Subtotal:</span>
-                            <strong id="cartSubtotal">$0.00</strong>
-                        </div>
-                        <div class="summary-row">
-                            <span>Shipping:</span>
-                            <strong>$100.00</strong>
-                        </div>
-                        <div class="summary-row total">
-                            <span>Total:</span>
-                            <strong id="cartTotal">$100.00</strong>
-                        </div>
-                        <button id="cancelCartBtn" type="button" class="ghost-button">Cancel Cart</button>
-                        <button id="checkoutBtn" type="button" class="submit">Checkout</button>
-                        <button id="continueShopping" type="button" class="ghost-button">Continue Shopping</button>
-                    </div>
+                    <p class="eyebrow">Live overview</p>
+                    <h1>Dashboard for the plush shop.</h1>
+                    <p class="muted">Everything here is calculated from the live records already in your database.</p>
                 </div>
             </section>
 
-            <div class="cart-backdrop hidden" id="cartBackdrop"></div>
-
-            <section class="about" id="about">
-                <div class="section-heading about-heading">
-                    <div>
-                        <p class="eyebrow">About the shop</p>
-                        <h2>Built for collectors and cozy gifts</h2>
-                    </div>
-                </div>
-                <p>Plush Palette is a cheerful storefront for fans who want a softer shelf, a brighter desk, and a cart full of characters they love.</p>
-                <div class="about-links" aria-label="Shop links">
-                    <a href="#products">Browse plushies</a>
-                    <a href="#about">About the brand</a>
-                    <a href="#home">Back to top</a>
-                </div>
+            <section class="stats-grid admin-stats">
+                <article class="stat-card"><span>Total users</span><strong id="statUsers">0</strong></article>
+                <article class="stat-card"><span>Total products</span><strong id="statProducts">0</strong></article>
+                <article class="stat-card"><span>Total orders</span><strong id="statOrders">0</strong></article>
+                <article class="stat-card"><span>Total revenue</span><strong id="statRevenue">$0.00</strong></article>
             </section>
 
-            <section class="profile-section hidden" id="profileSection"></section>
-
-            <section class="admin-dashboard admin-only hidden" id="adminDashboard">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">Admin dashboard</p>
-                        <h2>Inventory control</h2>
+            <section class="admin-panels">
+                <div class="panel admin-panel" data-panel="dashboard">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Quick actions</p>
+                            <h2>Admin shortcuts</h2>
+                        </div>
+                        <button type="button" class="ghost-btn" id="newProductBtn">New product</button>
+                    </div>
+                    <div class="cards-grid compact-grid">
+                        <article class="mini-card"><span>Products</span><strong>Manage inventory</strong></article>
+                        <article class="mini-card"><span>Orders</span><strong>Track and update status</strong></article>
+                        <article class="mini-card"><span>Users</span><strong>Moderate accounts</strong></article>
                     </div>
                 </div>
 
-                <nav class="admin-menu" aria-label="Admin dashboard routes">
-                    <button type="button" class="admin-route" data-admin-route="products">Products</button>
-                    <button type="button" class="admin-route" data-admin-route="orders">Orders</button>
-                    <button type="button" class="admin-route" data-admin-route="users">Users</button>
-                    <button type="button" class="admin-route" data-admin-route="profile">Profile</button>
-                    <a class="admin-route admin-home-link" href="#home">Home</a>
-                </nav>
-
-                <div class="admin-route-panels">
-                    <section class="admin-route-panel" data-admin-panel="home">
-                        <div class="dashboard-card top-action-card" id="addProductCard">
-                            <div>
-                                <p class="eyebrow">Create product</p>
-                                <h3>Add a new plush drop</h3>
-                                <p>Open the product composer, save the item, then return here automatically.</p>
-                            </div>
-                            <button class="submit action-button" type="button" id="openProductPageBtn">Add product</button>
+                <div class="panel hidden admin-panel" data-panel="products">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Products</p>
+                            <h2>Catalog manager</h2>
                         </div>
-
-                        <section class="admin-overview-grid" aria-label="Admin overview">
-                            <article class="stat-card admin-mini-card">
-                                <span>Home</span>
-                                <strong>Dashboard overview</strong>
-                            </article>
-                            <article class="stat-card admin-mini-card">
-                                <span>Products</span>
-                                <strong>Manage the catalog</strong>
-                            </article>
-                            <article class="stat-card admin-mini-card">
-                                <span>Orders</span>
-                                <strong>Track purchases</strong>
-                            </article>
-                        </section>
-                    </section>
-
-                    <section class="admin-route-panel hidden" data-admin-panel="products">
-                        <div class="product-list-panel" id="itemManager">
-                            <div class="list-head">
-                                <h3>Product list</h3>
-                                <button id="reloadProducts" type="button">Refresh</button>
-                            </div>
-                            <div class="inventory-table" id="productList"></div>
-                        </div>
-                    </section>
-
-                    <section class="admin-route-panel hidden" data-admin-panel="orders">
-                        <div class="product-list-panel order-panel" id="orderManager">
-                            <div class="list-head">
-                                <h3>Order list</h3>
-                                <button id="reloadOrders" type="button">Refresh</button>
-                            </div>
-                            <div class="inventory-table order-table" id="orderList"></div>
-                        </div>
-                    </section>
-
-                    <section class="admin-route-panel hidden" data-admin-panel="users">
-                        <div class="product-list-panel user-management-panel" id="userManager">
-                            <div class="list-head">
-                                <h3>User management</h3>
-                                <button id="reloadUsers" type="button">Refresh</button>
-                            </div>
-                            <div class="inventory-table user-table" id="userList"></div>
-                        </div>
-                    </section>
-
-                    <section class="admin-route-panel hidden" data-admin-panel="profile">
-                        <div class="dashboard-card profile-card">
-                            <div>
-                                <p class="eyebrow">Profile</p>
-                                <h3 id="profileName">Admin profile</h3>
-                                <p id="profileEmail">Profile details will appear here.</p>
-                            </div>
-                            <div class="profile-pill">
-                                <span id="profileRole">Admin</span>
-                            </div>
-                        </div>
-
-                        <div class="product-list-panel profile-panel">
-                            <div class="list-head">
-                                <h3>Account details</h3>
-                                <button id="refreshProfile" type="button">Refresh</button>
-                            </div>
-                            <div class="profile-details" id="profileDetails"></div>
-                        </div>
-                    </section>
-                </div>
-            </section>
-
-            <section class="product-page admin-only hidden" id="productPage">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">Product composer</p>
-                        <h2>Create or edit a plushie</h2>
+                        <button type="button" class="ghost-btn" id="refreshProductsBtn">Refresh</button>
                     </div>
-                </div>
-
-                <div class="admin-layout single-column-layout">
-                    <form class="admin-form" id="productForm">
-                        <input id="productId" name="item_id" type="hidden">
-
-                        <label class="field">
-                            <span>Category</span>
-                            <input id="productCategory" name="category" type="text" placeholder="Anime" required>
-                        </label>
-
-                        <label class="field">
-                            <span>Product name</span>
-                            <input id="productDescription" name="description" type="text" placeholder="Moon Bunny plush" required>
-                        </label>
-
-                        <label class="field">
-                            <span>Product image</span>
-                            <input id="productImage" name="image" type="file" accept="image/png, image/jpeg, image/jpg">
-                        </label>
-
-                        <div class="form-grid">
-                            <label class="field">
-                                <span>Cost Price</span>
-                                <input id="productCost" name="cost_price" type="number" min="0" step="0.01" placeholder="12.00" required>
-                            </label>
-
-                            <label class="field">
-                                <span>Sell Price</span>
-                                <input id="productSell" name="sell_price" type="number" min="0" step="0.01" placeholder="24.00" required>
-                            </label>
-                        </div>
-
-                        <label class="field">
-                            <span>Quantity</span>
-                            <input id="productQuantity" name="quantity" type="number" min="0" step="1" placeholder="10">
-                        </label>
-
-                        <button class="submit" type="submit" id="productSubmit">Add product</button>
-                        <button class="ghost-button" type="button" id="cancelEditBtn">Back to dashboard</button>
-                        <p id="productMessage" class="message"></p>
+                    <div class="table-tools">
+                        <input type="search" id="productSearch" class="search-input" placeholder="Search products">
+                    </div>
+                    <div id="adminProductTable" class="table-view"></div>
+                    <div class="pager" id="productPager"></div>
+                    <form id="productForm" class="editor-form" novalidate>
+                        <input type="hidden" id="productId">
+                        <label class="field"><span>Category</span><input id="productCategory" name="category" type="text"></label>
+                        <label class="field"><span>Name</span><input id="productName" name="description" type="text"></label>
+                        <label class="field"><span>Cost price</span><input id="productCost" name="cost_price" type="number" min="0" step="0.01"></label>
+                        <label class="field"><span>Sell price</span><input id="productSell" name="sell_price" type="number" min="0" step="0.01"></label>
+                        <label class="field"><span>Quantity</span><input id="productQty" name="quantity" type="number" min="0" step="1"></label>
+                        <label class="field"><span>Images</span><input id="productImage" name="images" type="file" accept="image/png, image/jpeg, image/jpg" multiple></label>
+                        <button type="submit" class="primary-btn" id="productSubmit">Save product</button>
                     </form>
                 </div>
-            </section>
 
-            <section class="admin-section admin-only hidden" id="admin">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">Admin menu</p>
-                        <h2>Admin index</h2>
+                <div class="panel hidden admin-panel" data-panel="orders">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Orders</p>
+                            <h2>Transaction list</h2>
+                        </div>
+                        <button type="button" class="ghost-btn" id="refreshOrdersBtn">Refresh</button>
+                    </div>
+                    <div class="table-tools">
+                        <input type="search" id="orderSearch" class="search-input" placeholder="Search orders">
+                    </div>
+                    <div id="adminOrderTable" class="table-view"></div>
+                    <div class="pager" id="orderPager"></div>
+                </div>
+
+                <div class="panel hidden admin-panel" data-panel="users">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Users</p>
+                            <h2>Account management</h2>
+                        </div>
+                        <button type="button" class="ghost-btn" id="refreshUsersBtn">Refresh</button>
+                    </div>
+                    <div class="table-tools">
+                        <input type="search" id="userSearch" class="search-input" placeholder="Search users">
+                    </div>
+                    <div id="adminUserTable" class="table-view"></div>
+                    <div class="pager" id="userPager"></div>
+                </div>
+
+                <div class="panel hidden admin-panel" data-panel="profile">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Profile</p>
+                            <h2>Admin account</h2>
+                        </div>
+                        <button type="button" class="ghost-btn" id="refreshProfileBtn">Refresh</button>
+                    </div>
+                    <div id="adminProfileCard" class="profile-card"></div>
+                </div>
+
+                <div class="panel hidden admin-panel" data-panel="charts">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Charts</p>
+                            <h2>Live performance snapshots</h2>
+                        </div>
+                        <button type="button" class="ghost-btn" id="refreshChartsBtn">Refresh</button>
+                    </div>
+                    <div class="chart-grid">
+                        <figure class="chart-card">
+                            <figcaption>Orders by status</figcaption>
+                            <canvas id="statusChart" width="320" height="220"></canvas>
+                        </figure>
+                        <figure class="chart-card">
+                            <figcaption>Products by category</figcaption>
+                            <canvas id="categoryChart" width="320" height="220"></canvas>
+                        </figure>
+                        <figure class="chart-card">
+                            <figcaption>Order totals trend</figcaption>
+                            <canvas id="trendChart" width="320" height="220"></canvas>
+                        </figure>
                     </div>
                 </div>
-                <p class="admin-note">Use the dashboard for inventory and the separate product composer for create and edit actions.</p>
             </section>
-
-            <footer class="site-footer">
-                <span>Plush Palette</span>
-                <span>Soft goods for every fandom</span>
-            </footer>
         </section>
     </main>
 
-    <div id="notificationBanner" class="notification-banner" role="status" aria-live="polite">
-        <strong data-banner-text></strong>
-        <small data-banner-detail></small>
-    </div>
+    <div id="notification" class="notification hidden" role="status" aria-live="polite"></div>
 
-    <script src="/app.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="/shared.js"></script>
+    <script src="/admin.js"></script>
 </body>
 </html>

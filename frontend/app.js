@@ -8,6 +8,9 @@ const submitButton = document.querySelector('.submit');
 const tabs = document.querySelectorAll('.tab');
 const authView = document.querySelector('#authView');
 const homePage = document.querySelector('#homePage');
+const customerHeader = document.querySelector('.customer-only');
+const adminHeader = document.querySelector('#adminHeader');
+const adminLogoutBtn = document.querySelector('#adminLogoutBtn');
 const accountName = document.querySelector('#accountName');
 const accountEmail = document.querySelector('#accountEmail');
 const logoutBtn = document.querySelector('#logoutBtn');
@@ -39,6 +42,10 @@ const profileEmail = document.querySelector('#profileEmail');
 const profileRole = document.querySelector('#profileRole');
 const profileDetails = document.querySelector('#profileDetails');
 const refreshProfile = document.querySelector('#refreshProfile');
+const adminUserCount = document.querySelector('#adminUserCount');
+const adminProductCount = document.querySelector('#adminProductCount');
+const adminOrderCount = document.querySelector('#adminOrderCount');
+const adminRevenueCount = document.querySelector('#adminRevenueCount');
 const featuredProductCard = document.querySelector('#featuredProductCard');
 const featuredProductArt = document.querySelector('#featuredProductArt');
 const featuredProductName = document.querySelector('#featuredProductName');
@@ -68,7 +75,11 @@ const continueShopping = document.querySelector('#continueShopping');
 const notificationBanner = document.querySelector('#notificationBanner');
 const adminOnlyNodes = document.querySelectorAll('.admin-only');
 const adminHomeLink = document.querySelector('.admin-home-link');
-const frontendMode = document.body.dataset.frontend || 'customer';
+let frontendMode = document.body.dataset.frontend || 'customer';
+const currentPath = window.location.pathname.toLowerCase();
+const isAdminPage = currentPath.endsWith('/adminindex.html') || currentPath.endsWith('/indexadmin.html');
+const authStorageKeys = ['auth_token', 'auth_token_admin', 'auth_token_customer'];
+const pageAuthStorageKey = isAdminPage ? 'auth_token_admin' : 'auth_token_customer';
 const heroSection = document.querySelector('.hero');
 const statsGridSection = document.querySelector('.stats-grid');
 const productsSection = document.querySelector('#products');
@@ -94,9 +105,28 @@ const setCustomerHomepageVisibility = (visible) => {
         });
 };
 
-const getToken = () => localStorage.getItem('auth_token');
-const setToken = (token) => localStorage.setItem('auth_token', token);
-const clearToken = () => localStorage.removeItem('auth_token');
+const getToken = () => {
+    const keys = [pageAuthStorageKey, ...authStorageKeys.filter((key) => key !== pageAuthStorageKey)];
+    for (const key of keys) {
+        const token = localStorage.getItem(key);
+        if (token) {
+            return token;
+        }
+    }
+    return null;
+};
+
+const endBoot = () => {
+    document.body.classList.remove('is-booting');
+};
+
+const setToken = (token) => {
+    authStorageKeys.forEach((key) => localStorage.setItem(key, token));
+};
+
+const clearToken = () => {
+    authStorageKeys.forEach((key) => localStorage.removeItem(key));
+};
 
 const loadSessionCart = () => {
     sessionCart = [];
@@ -160,6 +190,10 @@ const showSoftNotification = (text, detail = '', type = 'success') => {
 
 const redirectToHome = () => {
     hideCart();
+    if (frontendMode === 'admin') {
+        location.hash = '#adminDashboard';
+        return;
+    }
     location.hash = '#home';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -200,6 +234,11 @@ const api = async (path, options = {}) => {
 const formatPrice = (value) => {
     const amount = Number(value || 0);
     return `$${amount.toFixed(2)}`;
+};
+
+const parseMoney = (value) => {
+    const amount = Number(String(value ?? 0).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(amount) ? amount : 0;
 };
 
 const formatDate = (value) => {
@@ -524,6 +563,48 @@ const loadAdminProfile = async () => {
     renderAdminProfileForm(profile);
 };
 
+const renderAdminOverviewStats = ({ users = 0, products = 0, orders = 0, revenue = 0 } = {}) => {
+    if (adminUserCount) {
+        adminUserCount.textContent = String(users);
+    }
+
+    if (adminProductCount) {
+        adminProductCount.textContent = String(products);
+    }
+
+    if (adminOrderCount) {
+        adminOrderCount.textContent = String(orders);
+    }
+
+    if (adminRevenueCount) {
+        adminRevenueCount.textContent = formatPrice(revenue);
+    }
+};
+
+const loadAdminOverviewStats = async () => {
+    try {
+        const [usersResponse, itemsResponse, ordersResponse] = await Promise.all([
+            api('/users'),
+            api('/items'),
+            api('/orders')
+        ]);
+
+        const users = Array.isArray(usersResponse.rows) ? usersResponse.rows : [];
+        const items = Array.isArray(itemsResponse.rows) ? itemsResponse.rows : [];
+        const orders = Array.isArray(ordersResponse.orders) ? ordersResponse.orders : [];
+        const revenue = orders.reduce((sum, order) => sum + parseMoney(order.total_amount), 0);
+
+        renderAdminOverviewStats({
+            users: users.length,
+            products: items.length,
+            orders: orders.length,
+            revenue
+        });
+    } catch (error) {
+        renderAdminOverviewStats();
+    }
+};
+
 const loadCustomerProfile = async () => {
     try {
         await loadCustomerDashboard();
@@ -698,6 +779,10 @@ const renderGroupedProducts = (items) => {
 };
 
 const updateCartUI = () => {
+    if (!cartCount || !cartItems || !cartSubtotal || !cartTotal || !checkoutBtn) {
+        return;
+    }
+
     const totalItems = sessionCart.reduce((sum, item) => sum + item.quantity, 0);
     cartCount.textContent = totalItems;
     cartCount.style.display = totalItems > 0 ? 'inline-grid' : 'none';
@@ -856,6 +941,10 @@ const checkout = async () => {
 };
 
 const renderFeaturedProduct = (item) => {
+    if (!featuredProductCard || !featuredProductArt || !featuredProductName || !featuredProductDescription || !featuredProductPrice) {
+        return;
+    }
+
     if (!item) {
         featuredProductCard.className = 'product-card featured-product-card';
         featuredProductArt.className = 'product-art art-one';
@@ -929,6 +1018,10 @@ const setAdminRoute = (route, syncHash = true) => {
 };
 
 const showAdminDashboard = (route = adminHashToRoute()) => {
+    if (!adminDashboard || !productPage) {
+        return;
+    }
+
     adminDashboard.classList.remove('hidden');
     productPage.classList.add('hidden');
 
@@ -936,11 +1029,16 @@ const showAdminDashboard = (route = adminHashToRoute()) => {
     addProductCard.classList.toggle('hidden', !isAdmin);
 
     setAdminRoute(route, false);
-    loadProducts();
-    loadUsers();
 
     if (route === 'orders') {
         loadOrders();
+    } else if (route === 'home') {
+        loadAdminOverviewStats();
+        loadProducts();
+        loadUsers();
+    } else {
+        loadProducts();
+        loadUsers();
     }
 
     if (route === 'profile') {
@@ -949,6 +1047,10 @@ const showAdminDashboard = (route = adminHashToRoute()) => {
 };
 
 const showProductPage = () => {
+    if (!adminDashboard || !productPage) {
+        return;
+    }
+
     adminDashboard.classList.add('hidden');
     productPage.classList.remove('hidden');
     location.hash = 'productPage';
@@ -1090,9 +1192,24 @@ const showHome = (user) => {
     authView.classList.add('hidden');
     homePage.classList.remove('hidden');
     hideCustomerProfile();
+    hideCart();
     accountName.textContent = user.name || 'Plush Palette';
     accountEmail.textContent = user.email || '';
     const isAdmin = user.role === 'admin';
+    frontendMode = isAdmin ? 'admin' : 'customer';
+
+    if (isAdminPage && !isAdmin) {
+        window.location.replace('/index.html');
+        return;
+    }
+
+    if (!isAdminPage && isAdmin) {
+        window.location.replace('/adminindex.html');
+        return;
+    }
+
+    customerHeader?.classList.toggle('hidden', isAdmin);
+    adminHeader?.classList.toggle('hidden', !isAdmin);
 
     adminOnlyNodes.forEach((node) => {
         node.classList.toggle('hidden', !isAdmin);
@@ -1101,9 +1218,12 @@ const showHome = (user) => {
     if (frontendMode === 'admin' && isAdmin) {
         setCustomerHomepageVisibility(false);
         loadProducts();
-        syncCustomerCart();
-        adminDashboard.classList.remove('hidden');
-        productPage.classList.add('hidden');
+        if (adminDashboard) {
+            adminDashboard.classList.remove('hidden');
+        }
+        if (productPage) {
+            productPage.classList.add('hidden');
+        }
         showAdminDashboard(adminHashToRoute());
         return;
     }
@@ -1112,21 +1232,31 @@ const showHome = (user) => {
     loadProducts();
     syncCustomerCart();
 
-    adminDashboard.classList.add('hidden');
-    productPage.classList.add('hidden');
+    if (adminDashboard) {
+        adminDashboard.classList.add('hidden');
+    }
+    if (productPage) {
+        productPage.classList.add('hidden');
+    }
 
     if (frontendMode === 'customer' && (location.hash === '#profile' || location.hash === '#orders')) {
         showCustomerProfile();
     } else {
         location.hash = '#home';
     }
+
+    endBoot();
 };
 
 const showAuth = () => {
     homePage.classList.add('hidden');
     authView.classList.remove('hidden');
     hideCustomerProfile();
+    hideCart();
+    customerHeader?.classList.remove('hidden');
+    adminHeader?.classList.add('hidden');
     adminOnlyNodes.forEach((node) => node.classList.add('hidden'));
+    endBoot();
 };
 
 const loadCurrentUser = async () => {
@@ -1139,16 +1269,20 @@ const loadCurrentUser = async () => {
     try {
         const data = await api('/me');
         currentUser = data.user;
+        frontendMode = currentUser?.role === 'admin' ? 'admin' : 'customer';
         showHome(data.user);
-        await api('/cart/merge', { method: 'POST' }).catch(() => {});
-        await syncCustomerCart();
         if (frontendMode === 'admin' && currentUser?.role === 'admin') {
+            await loadAdminOverviewStats();
             await loadAdminProfile();
+        } else {
+            await api('/cart/merge', { method: 'POST' }).catch(() => {});
+            await syncCustomerCart();
         }
     } catch (error) {
         clearToken();
         showAuth();
         showMessage(error.message, true);
+        endBoot();
     }
 };
 
@@ -1184,6 +1318,7 @@ form.addEventListener('submit', async (event) => {
 
         setToken(data.token);
         currentUser = data.user;
+        frontendMode = currentUser?.role === 'admin' ? 'admin' : 'customer';
         showHome(data.user);
         showMessage(data.message || 'Success');
         form.reset();
@@ -1198,27 +1333,28 @@ adminRouteButtons.forEach((button) => {
     button.addEventListener('click', () => {
         const route = button.dataset.adminRoute || 'home';
         if (route === 'home') {
-            hideCustomerProfile();
-            adminDashboard.classList.add('hidden');
-            productPage.classList.add('hidden');
-            location.hash = '#home';
+            showAdminDashboard('home');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-        location.hash = adminRouteToHash(route);
+
+        showAdminDashboard(route);
+        if (route === 'profile') {
+            showAdminProfile();
+        }
     });
 });
 
 adminHomeLink?.addEventListener('click', (event) => {
     event.preventDefault();
     hideCustomerProfile();
-    adminDashboard.classList.add('hidden');
-    productPage.classList.add('hidden');
+    adminDashboard?.classList.add('hidden');
+    productPage?.classList.add('hidden');
     location.hash = '#home';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-cartLink.addEventListener('click', (e) => {
+cartLink?.addEventListener('click', (e) => {
     e.preventDefault();
     if (cartSection.style.display === 'none' || !cartSection.style.display) {
         cartSection.style.display = 'flex';
@@ -1230,12 +1366,12 @@ cartLink.addEventListener('click', (e) => {
     }
 });
 
-closeCartBtn.addEventListener('click', (e) => {
+closeCartBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     hideCart();
 });
 
-continueShopping.addEventListener('click', (e) => {
+continueShopping?.addEventListener('click', (e) => {
     e.preventDefault();
     hideCart();
     location.hash = '#products';
@@ -1260,9 +1396,9 @@ cartBackdrop?.addEventListener('click', (e) => {
     }
 });
 
-checkoutBtn.addEventListener('click', checkout);
+checkoutBtn?.addEventListener('click', checkout);
 
-cartItems.addEventListener('click', async (event) => {
+cartItems?.addEventListener('click', async (event) => {
     const btn = event.target.closest('button');
     if (!btn) return;
 
@@ -1293,25 +1429,25 @@ productSections?.addEventListener('click', async (event) => {
     }
 });
 
-reloadProducts.addEventListener('click', loadProducts);
-reloadOrders.addEventListener('click', loadOrders);
-reloadUsers.addEventListener('click', loadUsers);
+reloadProducts?.addEventListener('click', loadProducts);
+reloadOrders?.addEventListener('click', loadOrders);
+reloadUsers?.addEventListener('click', loadUsers);
 refreshProfile?.addEventListener('click', () => showAdminProfile());
 if (refreshCustomerProfile) {
     refreshCustomerProfile.onclick = () => showCustomerProfile();
 }
 
-openProductPageBtn.addEventListener('click', () => {
+openProductPageBtn?.addEventListener('click', () => {
     resetProductForm();
     showProductPage();
 });
 
-cancelEditBtn.addEventListener('click', () => {
+cancelEditBtn?.addEventListener('click', () => {
     resetProductForm();
     showAdminDashboard();
 });
 
-productList.addEventListener('click', async (event) => {
+productList?.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');
 
     if (!button) {
@@ -1366,7 +1502,7 @@ productList.addEventListener('click', async (event) => {
     }
 });
 
-userList.addEventListener('click', async (event) => {
+userList?.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');
 
     if (!button) {
@@ -1425,7 +1561,7 @@ profileDetails?.addEventListener('submit', async (event) => {
 
     event.preventDefault();
 
-    const messageNode = profileDetails.querySelector('#adminProfileMessage');
+    const messageNode = profileDetails?.querySelector('#adminProfileMessage');
     if (messageNode) {
         messageNode.textContent = 'Saving profile...';
         messageNode.classList.remove('error');
@@ -1465,7 +1601,7 @@ customerOrdersList?.addEventListener('click', (event) => {
     toggleCustomerOrder(orderId);
 });
 
-productForm.addEventListener('submit', async (event) => {
+productForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     showProductMessage('Saving...');
 
@@ -1574,7 +1710,7 @@ window.addEventListener('hashchange', () => {
     }
 });
 
-logoutBtn.addEventListener('click', async () => {
+logoutBtn?.addEventListener('click', async () => {
     try {
         await api('/logout', { method: 'POST' });
     } catch (error) {
@@ -1585,9 +1721,15 @@ logoutBtn.addEventListener('click', async () => {
     currentUser = null;
     showAuth();
     showMessage('Logged out');
+    endBoot();
+});
+
+adminLogoutBtn?.addEventListener('click', () => {
+    logoutBtn.click();
 });
 
 setMode('login');
 loadSessionCart();
 updateCartUI();
+hideCart();
 loadCurrentUser();

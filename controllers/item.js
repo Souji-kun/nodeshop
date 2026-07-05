@@ -5,15 +5,74 @@ const sequelize = db.sequelize;
 
 const DEFAULT_IMAGE_PATH = 'images/default-product.svg';
 
+const toImageArray = (value) => {
+    if (!value) {
+        return [];
+    }
+
+    if (Array.isArray(value)) {
+        return value.filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return [];
+        }
+
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+                return parsed.filter(Boolean);
+            }
+        } catch {
+            // fall through to legacy single path support
+        }
+
+        return trimmed
+            .split(',')
+            .map((part) => part.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+};
+
+const toStoredImages = (paths) => {
+    const unique = [...new Set((paths || []).filter(Boolean))];
+    return JSON.stringify(unique);
+};
+
+const getRequestImages = (req) => {
+    const combined = [];
+    const single = req.files?.image || [];
+    const multi = req.files?.images || [];
+
+    [...single, ...multi].forEach((file) => {
+        if (file?.path) {
+            combined.push(file.path.replace(/\\/g, '/'));
+        }
+    });
+
+    if (req.file?.path) {
+        combined.push(req.file.path.replace(/\\/g, '/'));
+    }
+
+    return [...new Set(combined)];
+};
+
 const serializeItem = (item) => {
     if (!item) {
         return null;
     }
 
     const plainItem = item.get ? item.get({ plain: true }) : item;
+    const images = toImageArray(plainItem.img_path);
 
     return {
         ...plainItem,
+        images,
+        img_path: images.length ? images[0] : plainItem.img_path || DEFAULT_IMAGE_PATH,
         isDisabled: Boolean(plainItem.deleted_at),
         isActive: !plainItem.deleted_at
     };
@@ -57,7 +116,8 @@ exports.createItem = async (req, res, next) => {
 
     try {
         const { category, description, cost_price, sell_price, quantity } = req.body;
-        const imagePath = req.file?.path.replace(/\\/g, "/") || DEFAULT_IMAGE_PATH;
+        const uploadedImages = getRequestImages(req);
+        const storedImages = uploadedImages.length ? toStoredImages(uploadedImages) : toStoredImages([DEFAULT_IMAGE_PATH]);
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
         const itemCategory = String(category || '').trim() || 'Uncategorized';
 
@@ -72,7 +132,7 @@ exports.createItem = async (req, res, next) => {
                 description,
                 cost_price,
                 sell_price,
-                img_path: imagePath
+                img_path: storedImages
             },
             { transaction }
         );
@@ -91,7 +151,7 @@ exports.createItem = async (req, res, next) => {
         return res.status(201).json({
             success: true,
             itemId: item.item_id,
-            image: imagePath,
+            images: uploadedImages.length ? uploadedImages : [DEFAULT_IMAGE_PATH],
             quantity: stock.quantity,
             item: serializeItem(createdItem || item)
         });
@@ -116,7 +176,10 @@ exports.updateItem = async (req, res, next) => {
             return res.status(404).json({ error: 'Item not found' });
         }
 
-        const imagePath = req.file?.path.replace(/\\/g, "/") || existingItem.img_path || DEFAULT_IMAGE_PATH;
+        const uploadedImages = getRequestImages(req);
+        const existingImages = toImageArray(existingItem.img_path);
+        const finalImages = uploadedImages.length ? uploadedImages : existingImages;
+        const storedImages = toStoredImages(finalImages.length ? finalImages : [DEFAULT_IMAGE_PATH]);
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
         const itemCategory = String(category || existingItem.category || '').trim() || 'Uncategorized';
 
@@ -131,7 +194,7 @@ exports.updateItem = async (req, res, next) => {
                 description,
                 cost_price,
                 sell_price,
-                img_path: imagePath
+                img_path: storedImages
             },
             { where: { item_id: id }, transaction }
         );
