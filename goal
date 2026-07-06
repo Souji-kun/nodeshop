@@ -1,6 +1,20 @@
-// 1: fix admin header: Home(customer homepage accessible by admin). Dashboard(admindashboard). Products(add products + product management). Orders(seems alright now). Users( seems good too). Profile( add profile edit tab with profile picture upload). Logout( put logout here).
-// 2: fix customer header: Home(customer homepage). Products( Product list by category). Profile[submenu(add profile edit tab with profile picture upload)/My orders. Logout( put logout here).
-// 1.1/2.2: search bar for products in both admin and customer header. Search by product name or category. Search results should be displayed on the same page without page reloads. Use ajax for this. add filter button tab
-// 3: upon accessing main menu for admin, only change the url route and then html body should be replaced with the new page content. No page reloads. Same for customer main menu.
-// 4: admin dashboard based on the data in the database, show the following: total number of users, total number of products, total number of orders, total revenue generated from all orders
-// 5: footer, idunno about that pagination.
+/*
+new goal
+1: fix header to make it stretch from left to right screen, there should be no padding or margin at the very top
+2: fix footer to divide detail and shortcut ratio to 60:40, the shortcut should have text hyperlink clickable but not a button.
+3: make a transaction: make a new card appear or hover above cart that asks to proceed to payment button and later
+3.1(choice): click proceed payment, negative amount warning, higher amount -> click proceed-> then sukli( order status = processing), cancel button ->= order status = pending
+3.2(choice): click cancel ->= order status(pending)
+3.3: customer orders with proceed payment button on pending status and cancel button to status cancel, orders processing/completed check receipt button
+
+4: idk if mailer is setup, if setup add receipt downloadable
+5: email verify(is it required????) 
+6: add hover effect on charts to show which products as well for the chart line
+
+
+fixes
+1: product add category dropdown choices
+2: added name and description on item table(check nodetest001.sql)
+3: revamp customer ui
+4: revamp profile button
+*/
