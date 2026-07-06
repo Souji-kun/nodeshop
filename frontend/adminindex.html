@@ -105,8 +105,18 @@
                     <div class="pager" id="productPager"></div>
                     <form id="productForm" class="editor-form" novalidate>
                         <input type="hidden" id="productId">
-                        <label class="field"><span>Category</span><input id="productCategory" name="category" type="text"></label>
-                        <label class="field"><span>Name</span><input id="productName" name="description" type="text"></label>
+                        <label class="field"><span>Name</span><input id="productName" name="name" type="text"></label>
+                        <label class="field">
+                            <span>Category</span>
+                            <select id="productCategory" name="category">
+                                <option value="Plushie">Plushie</option>
+                                <option value="Figurine">Figurine</option>
+                                <option value="Collectibles">Collectibles</option>
+                                <option value="Accessories">Accessories</option>
+                                <option value="Uncategorized">uncategorized</option>
+                            </select>
+                        </label>
+                        <label class="field"><span>Description</span><textarea id="productDescription" name="description" rows="3"></textarea></label>
                         <label class="field"><span>Cost price</span><input id="productCost" name="cost_price" type="number" min="0" step="0.01"></label>
                         <label class="field"><span>Sell price</span><input id="productSell" name="sell_price" type="number" min="0" step="0.01"></label>
                         <label class="field"><span>Quantity</span><input id="productQty" name="quantity" type="number" min="0" step="1"></label>

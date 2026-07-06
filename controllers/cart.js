@@ -52,7 +52,7 @@ const loadCustomerCart = async (customerId, sessionId = null) => {
         include: [
             {
                 model: Item,
-                attributes: ['item_id', 'description', 'sell_price', 'img_path'],
+                attributes: ['item_id', 'name', 'description', 'sell_price', 'img_path'],
                 include: [{ model: Stock, attributes: ['quantity'] }]
             }
         ],

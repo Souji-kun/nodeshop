@@ -39,7 +39,7 @@ exports.salesChart = (req, res) => {
 };
 
 exports.itemsChart = (req, res) => {
-    const sql = 'SELECT i.description as items, sum(ol.quantity) as total FROM item i INNER JOIN orderline ol ON i.item_id = ol.item_id GROUP BY i.description';
+    const sql = 'SELECT i.name as items, sum(ol.quantity) as total FROM item i INNER JOIN orderline ol ON i.item_id = ol.item_id GROUP BY i.name';
     try {
         connection.query(sql, (err, rows, fields) => {
             if (err instanceof Error) {

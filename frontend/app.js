@@ -52,6 +52,7 @@ const featuredProductName = document.querySelector('#featuredProductName');
 const featuredProductDescription = document.querySelector('#featuredProductDescription');
 const featuredProductPrice = document.querySelector('#featuredProductPrice');
 const productIdInput = document.querySelector('#productId');
+const productNameInput = document.querySelector('#productName');
 const productCategoryInput = document.querySelector('#productCategory');
 const productSubmit = document.querySelector('#productSubmit');
 const productImageInput = document.querySelector('#productImage');
@@ -331,7 +332,7 @@ const renderOrders = (orders) => {
             const customer = order.Customer?.User?.name || order.Customer?.User?.email || `Customer #${order.customer_id}`;
             const orderItems = Array.isArray(order.OrderItems) ? order.OrderItems : [];
             const itemsMarkup = orderItems.map((line) => {
-                const itemName = line.Item?.description || `Item #${line.item_id}`;
+                const itemName = line.Item?.name || line.Item?.description || `Item #${line.item_id}`;
                 return `<span class="order-item-chip">${itemName} × ${line.quantity}</span>`;
             }).join('');
             const statusOptions = ['processing', 'completed', 'cancelled'];
@@ -413,7 +414,7 @@ const renderCustomerOrders = (orders = []) => {
         const orderItems = Array.isArray(order.OrderItems) ? order.OrderItems : [];
         const itemCount = orderItems.reduce((sum, line) => sum + Number(line.quantity || 0), 0);
         const lineMarkup = orderItems.map((line) => {
-            const name = line.Item?.description || `Item #${line.item_id}`;
+            const name = line.Item?.name || line.Item?.description || `Item #${line.item_id}`;
             return `
                 <div class="order-line-item">
                     <span>${name}</span>
@@ -680,6 +681,7 @@ const loadOrders = async () => {
 const normalizeCartItem = (cartItem, index = 0) => ({
     cartitem_id: cartItem.cartitem_id || cartItem.id || index + 1,
     item_id: cartItem.Item?.item_id || cartItem.item_id,
+    name: cartItem.Item?.name || cartItem.name,
     description: cartItem.Item?.description || cartItem.description,
     sell_price: cartItem.Item?.sell_price || cartItem.sell_price,
     img_path: cartItem.Item?.img_path || cartItem.img_path,
@@ -714,6 +716,7 @@ const getCardArtClass = (item) => {
 };
 
 const normalizeCategory = (value) => String(value || '').trim() || 'Uncategorized';
+const getItemName = (item) => item?.name || item?.description || 'Untitled product';
 
 const getProductCardMarkup = (item) => {
     const imageUrl = getImageUrl(item);
@@ -726,7 +729,7 @@ const getProductCardMarkup = (item) => {
         <article class="product-card ${isOutOfStock ? 'out-of-stock' : ''}">
             <div class="product-art ${artClass}" ${imageUrl ? `style="background-image: url(${imageUrl}); background-size: cover; background-position: center;"` : ''}></div>
             <span class="category-pill">${category}</span>
-            <h3>${item.description || 'Untitled product'}</h3>
+            <h3>${getItemName(item)}</h3>
             <p>Stock: ${quantity}</p>
             <strong>${formatPrice(item.sell_price)}</strong>
             <button type="button" class="add-to-cart-btn" data-item-id="${item.item_id}" ${isOutOfStock ? 'disabled' : ''}>
@@ -804,10 +807,10 @@ const updateCartUI = () => {
             return `
                 <div class="cart-item" data-cart-idx="${idx}">
                     <div class="cart-item-image">
-                        ${getImageUrl(item) ? `<img src="${getImageUrl(item)}" alt="${item.description}">` : '<div class="image-placeholder">No image</div>'}
+                        ${getImageUrl(item) ? `<img src="${getImageUrl(item)}" alt="${getItemName(item)}">` : '<div class="image-placeholder">No image</div>'}
                     </div>
                     <div class="cart-item-info">
-                        <h4>${item.description}</h4>
+                        <h4>${getItemName(item)}</h4>
                         <p>${formatPrice(item.sell_price)} × ${cartItem.quantity}</p>
                     </div>
                     <div class="cart-item-qty">
@@ -965,7 +968,7 @@ const renderFeaturedProduct = (item) => {
     featuredProductArt.style.backgroundImage = imageUrl ? `url(${imageUrl})` : '';
     featuredProductArt.style.backgroundSize = imageUrl ? 'cover' : '';
     featuredProductArt.style.backgroundPosition = imageUrl ? 'center' : '';
-    featuredProductName.textContent = item.description || 'Untitled product';
+    featuredProductName.textContent = getItemName(item);
     featuredProductDescription.textContent = `${normalizeCategory(item.category)} · Qty ${getItemQuantity(item)} · Item #${item.item_id}`;
     featuredProductPrice.textContent = formatPrice(item.sell_price);
 };
@@ -983,6 +986,9 @@ const startEditingProduct = (item) => {
     showProductPage();
     editingProductId = item.item_id;
     productIdInput.value = item.item_id;
+    if (productNameInput) {
+        productNameInput.value = getItemName(item);
+    }
     if (productCategoryInput) {
         productCategoryInput.value = normalizeCategory(item.category);
     }
@@ -1081,10 +1087,10 @@ const renderProductList = (items) => {
                 <article class="inventory-row ${isDisabled ? 'is-disabled' : ''}">
                     <span class="item-id">#${item.item_id}</span>
                     <span class="item-image-cell">
-                        ${imageUrl ? `<img src="${imageUrl}" alt="${item.description || 'Product'}">` : '<div class="image-placeholder">No image</div>'}
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${getItemName(item)}">` : '<div class="image-placeholder">No image</div>'}
                     </span>
                     <span class="item-category">${normalizeCategory(item.category)}</span>
-                    <span class="item-name">${item.description || 'Untitled product'}</span>
+                    <span class="item-name">${getItemName(item)}</span>
                     <span class="item-quantity">${quantity}</span>
                     <span class="item-price">${formatPrice(item.sell_price)}</span>
                     <span class="item-status ${isDisabled ? 'status-disabled' : 'status-active'}">${isDisabled ? 'Disabled' : 'Active'}</span>
@@ -1607,6 +1613,9 @@ productForm?.addEventListener('submit', async (event) => {
 
     try {
         const formData = new FormData(productForm);
+        if (productNameInput) {
+            formData.set('name', productNameInput.value);
+        }
         const itemPath = editingProductId ? `/items/${editingProductId}` : '/items';
         const method = editingProductId ? 'PUT' : 'POST';
         const wasEditing = Boolean(editingProductId);
@@ -1733,3 +1742,84 @@ loadSessionCart();
 updateCartUI();
 hideCart();
 loadCurrentUser();
+
+// Hero slideshow controller
+(function () {
+    const slidesRoot = document.getElementById('heroSlides');
+    if (!slidesRoot) return;
+
+    const slides = Array.from(slidesRoot.querySelectorAll('.hero-slide'));
+    const prevBtn = document.getElementById('heroPrev');
+    const nextBtn = document.getElementById('heroNext');
+    const dotsRoot = document.getElementById('heroDots');
+    let active = 0;
+    let timer = null;
+    const interval = 5000; // 5 seconds
+
+    function makeDots() {
+        if (!dotsRoot) return;
+        dotsRoot.innerHTML = '';
+        slides.forEach((s, i) => {
+            const btn = document.createElement('button');
+            btn.dataset.index = i;
+            btn.addEventListener('click', () => goto(i, true));
+            dotsRoot.appendChild(btn);
+        });
+        updateDots();
+    }
+
+    function updateDots() {
+        if (!dotsRoot) return;
+        const dots = Array.from(dotsRoot.children || []);
+        dots.forEach((d, i) => d.classList.toggle('is-active', i === active));
+    }
+
+    function show(index) {
+        slides.forEach((s, i) => {
+            s.classList.toggle('is-active', i === index);
+            const title = s.querySelector('.hero-title');
+            const sub = s.querySelector('.hero-sub');
+            if (i === index) {
+                title && (title.style.transform = 'translateY(0px)');
+                title && (title.style.opacity = '1');
+                sub && (sub.style.transform = 'translateY(0px)');
+                sub && (sub.style.opacity = '1');
+            } else {
+                title && (title.style.transform = 'translateY(8px)');
+                title && (title.style.opacity = '0');
+                sub && (sub.style.transform = 'translateY(8px)');
+                sub && (sub.style.opacity = '0');
+            }
+        });
+        updateDots();
+    }
+
+    function goto(index, manual = false) {
+        active = (index + slides.length) % slides.length;
+        show(active);
+        resetTimer(manual);
+    }
+
+    function prev() { goto(active - 1, true); }
+    function next() { goto(active + 1, true); }
+
+    function resetTimer(pausedByUser) {
+        if (timer) clearInterval(timer);
+        const delay = pausedByUser ? interval * 1.5 : interval;
+        timer = setInterval(() => { goto(active + 1, false); }, delay);
+    }
+
+    // initialize
+    makeDots();
+    show(active);
+    resetTimer(false);
+
+    prevBtn && prevBtn.addEventListener('click', prev);
+    nextBtn && nextBtn.addEventListener('click', next);
+
+    [prevBtn, nextBtn, dotsRoot].forEach(el => {
+        if (!el) return;
+        el.addEventListener('mouseenter', () => { if (timer) clearInterval(timer); });
+        el.addEventListener('mouseleave', () => resetTimer(false));
+    });
+})();

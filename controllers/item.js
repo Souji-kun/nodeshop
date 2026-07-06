@@ -71,6 +71,7 @@ const serializeItem = (item) => {
 
     return {
         ...plainItem,
+        name: plainItem.name || plainItem.description || 'Untitled product',
         images,
         img_path: images.length ? images[0] : plainItem.img_path || DEFAULT_IMAGE_PATH,
         isDisabled: Boolean(plainItem.deleted_at),
@@ -115,13 +116,15 @@ exports.createItem = async (req, res, next) => {
     const transaction = await sequelize.transaction();
 
     try {
-        const { category, description, cost_price, sell_price, quantity } = req.body;
+        const { category, name, description, cost_price, sell_price, quantity } = req.body;
         const uploadedImages = getRequestImages(req);
         const storedImages = uploadedImages.length ? toStoredImages(uploadedImages) : toStoredImages([DEFAULT_IMAGE_PATH]);
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
         const itemCategory = String(category || '').trim() || 'Uncategorized';
+        const itemName = String(name || '').trim();
+        const itemDescription = String(description || '').trim();
 
-        if (!description || !cost_price || !sell_price) {
+        if (!itemName || !cost_price || !sell_price) {
             await transaction.rollback();
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -129,7 +132,8 @@ exports.createItem = async (req, res, next) => {
         const item = await Item.create(
             {
                 category: itemCategory,
-                description,
+                name: itemName,
+                description: itemDescription || null,
                 cost_price,
                 sell_price,
                 img_path: storedImages
@@ -168,7 +172,7 @@ exports.updateItem = async (req, res, next) => {
 
     try {
         const { id } = req.params;
-        const { category, description, cost_price, sell_price, quantity } = req.body;
+        const { category, name, description, cost_price, sell_price, quantity } = req.body;
         const existingItem = await Item.findByPk(id);
 
         if (!existingItem || existingItem.deleted_at) {
@@ -182,8 +186,10 @@ exports.updateItem = async (req, res, next) => {
         const storedImages = toStoredImages(finalImages.length ? finalImages : [DEFAULT_IMAGE_PATH]);
         const stockQuantity = Number.isFinite(Number(quantity)) ? Number(quantity) : 0;
         const itemCategory = String(category || existingItem.category || '').trim() || 'Uncategorized';
+        const itemName = String(name || '').trim();
+        const itemDescription = String(description || '').trim();
 
-        if (!description || !cost_price || !sell_price) {
+        if (!itemName || !cost_price || !sell_price) {
             await transaction.rollback();
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -191,7 +197,8 @@ exports.updateItem = async (req, res, next) => {
         await Item.update(
             {
                 category: itemCategory,
-                description,
+                name: itemName,
+                description: itemDescription || null,
                 cost_price,
                 sell_price,
                 img_path: storedImages

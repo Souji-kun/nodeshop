@@ -25,6 +25,7 @@
     const $searchInput = $('#searchInput');
     const $searchSuggestions = $('#searchSuggestions');
     const $profileSection = $('#profileSection');
+    const $shopView = $('.shop-view');
     const $profileCard = $('#profileCard');
     const $profileForm = $('#profileForm');
     const $profileMessage = $('#profileMessage');
@@ -97,10 +98,34 @@
         $authScreen.removeClass('hidden');
     };
 
+    const showShopView = (scrollTarget = null) => {
+        $shopView.removeClass('hidden');
+        $profileSection.addClass('hidden');
+        closeModal();
+        if (scrollTarget === 'catalog') {
+            $('#catalog').get(0)?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const showProfileView = async () => {
+        $shopView.addClass('hidden');
+        $profileSection.removeClass('hidden');
+        closeCart();
+        closeModal();
+        setProfileTab('details');
+        await loadProfile();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const itemName = (item) => item?.name || item?.description || 'Untitled plush';
+
     const renderCatalog = (items) => {
         const q = String($searchInput.val() || '').toLowerCase();
         const filtered = items.filter((item) =>
             !q ||
+            String(itemName(item)).toLowerCase().includes(q) ||
             String(item.description || '').toLowerCase().includes(q) ||
             String(item.category || '').toLowerCase().includes(q)
         );
@@ -119,7 +144,7 @@
                 <article class="product-card product-open" data-id="${item.item_id}">
                     <div class="product-image"${image ? ` style="background-image:url('${image}')"` : ''}></div>
                     <span class="chip">${item.category || 'Uncategorized'}</span>
-                    <h3>${item.description || 'Untitled plush'}</h3>
+                    <h3>${itemName(item)}</h3>
                     <p>Stock: ${stock}</p>
                     <strong>${formatMoney(item.sell_price)}</strong>
                     <button type="button" class="primary-btn add-cart" data-id="${item.item_id}" ${stock <= 0 ? 'disabled' : ''}>
@@ -131,7 +156,7 @@
 
         const suggestions = filtered.slice(0, 5).map((item) => `
             <div class="suggestion-item" data-id="${item.item_id}">
-                <strong>${item.description || 'Untitled plush'}</strong>
+                <strong>${itemName(item)}</strong>
                 <div>${item.category || 'Uncategorized'} · ${formatMoney(item.sell_price)}</div>
             </div>
         `).join('');
@@ -157,7 +182,7 @@
             return `
                 <div class="cart-line">
                     <div>
-                        <strong>${item.description || 'Item'}</strong>
+                        <strong>${itemName(item)}</strong>
                         <p>${formatMoney(item.sell_price)} x ${line.quantity}</p>
                     </div>
                     <div class="cart-actions">
@@ -201,7 +226,7 @@
         const mainImage = normalizedImages[0] || '';
 
         $modalCategory.text(item.category || 'Uncategorized');
-        $productModalTitle.text(item.description || 'Untitled plush');
+        $productModalTitle.text(itemName(item));
         $modalDescription.text(item.description || '');
         $modalPrice.text(formatMoney(item.sell_price));
         $modalStock.text(String(Number(item.Stock?.quantity ?? item.quantity ?? 0)));
@@ -238,7 +263,11 @@
                 <div><span>Name</span><strong>${profile.user.name || ''}</strong></div>
                 <div><span>Email</span><strong>${profile.user.email || ''}</strong></div>
                 <div><span>Joined</span><strong>${formatDate(profile.user.created_at)}</strong></div>
-                <div><span>Role</span><strong>${profile.user.role || 'customer'}</strong></div>
+                <div><span>First name</span><strong>${profileSnapshot.fname || 'Not set'}</strong></div>
+                <div><span>Last name</span><strong>${profileSnapshot.lname || 'Not set'}</strong></div>
+                <div><span>Phone</span><strong>${profileSnapshot.phone || 'Not set'}</strong></div>
+                <div><span>Address</span><strong>${profileSnapshot.addressline || 'Not set'}</strong></div>
+                <div><span>Zipcode</span><strong>${profileSnapshot.zipcode || 'Not set'}</strong></div>
             </div>
         `);
         $profileAvatar.css('background-image', image ? `url("${image}")` : 'none');
@@ -285,6 +314,67 @@
         if (tab === 'orders') {
             $profileSection[0]?.scrollIntoView({ behavior: 'smooth' });
         }
+    };
+
+    const initHeroCarousel = () => {
+        const slidesRoot = document.getElementById('heroSlides');
+        if (!slidesRoot) return;
+
+        const slides = Array.from(slidesRoot.querySelectorAll('.hero-slide'));
+        const prevBtn = document.getElementById('heroPrev');
+        const nextBtn = document.getElementById('heroNext');
+        const dotsRoot = document.getElementById('heroDots');
+        if (!slides.length) return;
+
+        let active = Math.max(0, slides.findIndex((slide) => slide.classList.contains('is-active')));
+        let timer = null;
+        const interval = 5000;
+
+        const updateDots = () => {
+            if (!dotsRoot) return;
+            Array.from(dotsRoot.children).forEach((dot, index) => {
+                dot.classList.toggle('is-active', index === active);
+            });
+        };
+
+        const show = (index) => {
+            active = (index + slides.length) % slides.length;
+            slides.forEach((slide, slideIndex) => {
+                slide.classList.toggle('is-active', slideIndex === active);
+            });
+            updateDots();
+        };
+
+        const start = () => {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => show(active + 1), interval);
+        };
+
+        if (dotsRoot) {
+            dotsRoot.innerHTML = '';
+            slides.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+                dot.addEventListener('click', () => {
+                    show(index);
+                    start();
+                });
+                dotsRoot.appendChild(dot);
+            });
+        }
+
+        prevBtn?.addEventListener('click', () => {
+            show(active - 1);
+            start();
+        });
+        nextBtn?.addEventListener('click', () => {
+            show(active + 1);
+            start();
+        });
+
+        show(active);
+        start();
     };
 
     const loadSession = async () => {
@@ -368,17 +458,22 @@
             openCart();
         }
     });
+    $('#footerCartToggle').on('click', (event) => {
+        event.preventDefault();
+        openCart();
+    });
     $('#closeCartBtn, #cartBackdrop').on('click', closeCart);
     $('#refreshProfileBtn').on('click', loadProfile);
     $profileTabs.on('click', function () {
         setProfileTab(String($(this).data('profile-tab') || 'details'));
     });
+    $('[data-open-shop]').on('click', function (event) {
+        event.preventDefault();
+        showShopView($(this).is('[data-scroll-catalog]') ? 'catalog' : null);
+    });
     $('[data-open-profile]').on('click', async (event) => {
         event.preventDefault();
-        $profileSection.removeClass('hidden');
-        setProfileTab('details');
-        await loadProfile();
-        $profileSection[0].scrollIntoView({ behavior: 'smooth' });
+        await showProfileView();
     });
     $searchInput.on('input', () => renderCatalog(products));
     $searchInput.on('focus', () => {
@@ -395,7 +490,7 @@
         const id = $(this).data('id');
         const item = products.find((p) => Number(p.item_id) === Number(id));
         if (!item) return;
-        $searchInput.val(item.description || '');
+        $searchInput.val(itemName(item));
         renderCatalog(products);
         $('#catalog').get(0)?.scrollIntoView({ behavior: 'smooth' });
     });
@@ -514,5 +609,6 @@
     });
 
     setMode('login');
+    initHeroCarousel();
     loadSession();
 })();

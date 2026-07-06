@@ -49,35 +49,91 @@
                     <span class="brand-subtitle">Customer shop</span>
                 </div>
                 <nav class="topnav" aria-label="Customer navigation">
-                    <a class="pill-btn" href="#home">Home</a>
-                    <a class="pill-btn" href="#catalog">Catalog</a>
+                    <a class="pill-btn" href="#home" data-open-shop>Home</a>
+                    <a class="pill-btn" href="#catalog" data-open-shop data-scroll-catalog>Catalog</a>
                     <a class="pill-btn" href="#profileSection" data-open-profile>Profile</a>
                     <button type="button" class="pill-btn" id="cartToggle">Cart <span id="cartCount">0</span></button>
                     <button type="button" class="pill-btn" id="logoutBtn">Logout</button>
                 </nav>
             </header>
 
-            <section class="hero">
-                <div class="hero-copy">
-                    <p class="eyebrow">Fresh plush drops</p>
-                    <h1>Collect plushies from your favorite worlds.</h1>
-                    <p class="muted">Anime, games, movies, and original mascots, all in one cozy storefront.</p>
-                </div>
-                <div class="hero-card">
-                    <div class="hero-stat">
-                        <span>Curated selections</span>
-                        <strong>Soft, charming, and gift-ready</strong>
+            <section class="hero hero-carousel shop-view" id="heroSlideshow" aria-roledescription="carousel">
+                <div class="hero-slides" id="heroSlides">
+                    <!-- Slide items: change background-image inline or via JS -->
+                    <div class="hero-slide is-active" data-index="0" style="background-image:url('/images/hero1.jpg')">
+                        <div class="hero-overlay"></div>
+                        <div class="hero-content">
+                            <p class="eyebrow">Fresh plush drops</p>
+                            <h1 class="hero-title">Collect plushies from your favorite worlds.</h1>
+                            <p class="muted hero-sub">Anime, games, movies, and original mascots, all in one cozy storefront.</p>
+                            <div class="hero-card front-card">
+                                <div class="hero-stat">
+                                    <span>Curated selections</span>
+                                    <strong>Soft, charming, and gift-ready</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-slide" data-index="1" style="background-image:url('/images/hero2.jpg')">
+                        <div class="hero-overlay"></div>
+                        <div class="hero-content">
+                            <p class="eyebrow">New arrivals</p>
+                            <h1 class="hero-title">Limited edition chibi collection.</h1>
+                            <p class="muted hero-sub">Hand-stitched details and collectible tags.</p>
+                            <div class="hero-card front-card">
+                                <div class="hero-stat">
+                                    <span>Collector's choice</span>
+                                    <strong>Rare, soft, and ready to ship</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-slide" data-index="2" style="background-image:url('/images/hero3.jpg')">
+                        <div class="hero-overlay"></div>
+                        <div class="hero-content">
+                            <p class="eyebrow">Staff picks</p>
+                            <h1 class="hero-title">Cosy mascots for every shelf.</h1>
+                            <p class="muted hero-sub">Mix-and-match sizes for gifts and displays.</p>
+                            <div class="hero-card front-card">
+                                <div class="hero-stat">
+                                    <span>Curated selections</span>
+                                    <strong>Soft, charming, and gift-ready</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-slide" data-index="3" style="background-image:url('/images/hero4.jpg')">
+                        <div class="hero-overlay"></div>
+                        <div class="hero-content">
+                            <p class="eyebrow">Gift-ready bundles</p>
+                            <h1 class="hero-title">Wrap up cozy moments with every plush.</h1>
+                            <p class="muted hero-sub">Perfect for gifting, collecting, and cuddling.</p>
+                            <div class="hero-card front-card">
+                                <div class="hero-stat">
+                                    <span>Seasonal favorites</span>
+                                    <strong>Charming, soft, and unforgettable</strong>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <button class="hero-control prev" id="heroPrev" aria-label="Previous slide"><</button>
+                <button class="hero-control next" id="heroNext" aria-label="Next slide">></button>
+                <div class="hero-dots" id="heroDots" aria-hidden="false"></div>
             </section>
 
-            <section class="stats-row">
+            <section class="stats-row shop-view">
                 <article class="mini-card"><span>Easy checkout</span><strong>Fast orders</strong></article>
                 <article class="mini-card"><span>New arrivals</span><strong>Fresh weekly drops</strong></article>
-                <article class="mini-card"><span>Safe sessions</span><strong>Token-based login</strong></article>
+                <article class="mini-card"><span>Collector's pick</span><strong>Rare plush find</strong></article>
+                <article class="mini-card"><span>Cute Design</span><strong>Adorable Characters</strong></article>
             </section>
 
-            <section class="content-grid" id="catalog">
+            <section class="content-grid shop-view" id="catalog">
                 <div class="panel">
                     <div class="section-head search-head">
                         <div>
@@ -198,6 +254,19 @@
                     </div>
                 </div>
             </div>
+
+            <footer class="site-footer">
+                <div>
+                    <p class="brand">Plush Palette</p>
+                    <p class="muted">Soft plushies, figurines, collectibles, and accessories for cozy gifting.</p>
+                </div>
+                <nav class="footer-nav" aria-label="Footer navigation">
+                    <a href="#home" data-open-shop>Home</a>
+                    <a href="#catalog" data-open-shop data-scroll-catalog>Catalog</a>
+                    <a href="#profileSection" data-open-profile>Profile</a>
+                    <a href="#cartPanel" id="footerCartToggle">Cart</a>
+                </nav>
+            </footer>
         </section>
     </main>
 

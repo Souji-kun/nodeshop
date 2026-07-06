@@ -10,9 +10,13 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 'Uncategorized'
         },
-        description: {
+        name: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true
         },
         cost_price: {
             type: DataTypes.DECIMAL(10, 2),

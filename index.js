@@ -29,6 +29,32 @@ const ensureItemCategoryColumn = async () => {
     }
 };
 
+const ensureItemNameDescriptionColumns = async () => {
+    const [nameRows] = await db.sequelize.query(
+        "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'item' AND COLUMN_NAME = 'name'"
+    );
+    const [descriptionRows] = await db.sequelize.query(
+        "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'item' AND COLUMN_NAME = 'description'"
+    );
+
+    const hasName = Number(nameRows?.[0]?.columnCount || 0) > 0;
+    const hasDescription = Number(descriptionRows?.[0]?.columnCount || 0) > 0;
+
+    if (!hasName && hasDescription) {
+        await db.sequelize.query("ALTER TABLE item CHANGE COLUMN description name VARCHAR(255) NOT NULL");
+    } else if (!hasName) {
+        await db.sequelize.query("ALTER TABLE item ADD COLUMN name VARCHAR(255) NOT NULL AFTER category");
+    }
+
+    const [freshDescriptionRows] = await db.sequelize.query(
+        "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'item' AND COLUMN_NAME = 'description'"
+    );
+
+    if (Number(freshDescriptionRows?.[0]?.columnCount || 0) === 0) {
+        await db.sequelize.query("ALTER TABLE item ADD COLUMN description TEXT NULL AFTER name");
+    }
+};
+
 const ensureUserRoleColumn = async () => {
     const [rows] = await db.sequelize.query(
         "SELECT COUNT(*) AS columnCount FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'"
@@ -112,6 +138,7 @@ const startServer = async () => {
     await db.sequelize.authenticate();
     await ensureItemSoftDeleteColumn();
     await ensureItemCategoryColumn();
+    await ensureItemNameDescriptionColumns();
     await ensureUserRoleColumn();
     await ensureUserTokenColumn();
     await ensureOrderStatusColumn();

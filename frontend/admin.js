@@ -85,6 +85,7 @@
     };
 
     const imageUrl = (path) => path ? `/${String(path).replace(/^\/+/, '')}` : '';
+    const itemName = (item) => item?.name || item?.description || 'Untitled';
 
     const paginate = (items, page) => {
         const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
@@ -230,7 +231,7 @@
     const renderProducts = () => {
         const q = String($productSearch.val() || '').toLowerCase();
         const filtered = products.filter((item) => {
-            const hay = `${item.description || ''} ${item.category || ''}`.toLowerCase();
+            const hay = `${itemName(item)} ${item.description || ''} ${item.category || ''}`.toLowerCase();
             return !q || hay.includes(q);
         });
         const { rows, totalPages, page } = paginate(filtered, productPage);
@@ -249,9 +250,9 @@
             ${rows.map((item) => `
                 <div class="table-row">
                     <span>#${item.item_id}</span>
-                    <span class="thumb-cell">${imageUrl(item.img_path) ? `<img src="${imageUrl(item.img_path)}" alt="${item.description || 'Product'}">` : ''}</span>
+                    <span class="thumb-cell">${imageUrl(item.img_path) ? `<img src="${imageUrl(item.img_path)}" alt="${itemName(item)}">` : ''}</span>
                     <span>${item.category || 'Uncategorized'}</span>
-                    <span>${item.description || 'Untitled'}</span>
+                    <span>${itemName(item)}</span>
                     <span>${Number(item.Stock?.quantity ?? item.quantity ?? 0)}</span>
                     <span>${formatMoney(item.sell_price)}</span>
                     <span class="row-actions">
@@ -495,8 +496,9 @@
         const item = products.find((p) => Number(p.item_id) === Number(id));
         if (!item) return;
         $('#productId').val(item.item_id);
-        $('#productCategory').val(item.category || '');
-        $('#productName').val(item.description || '');
+        $('#productName').val(itemName(item));
+        $('#productCategory').val(item.category || 'Uncategorized');
+        $('#productDescription').val(item.description || '');
         $('#productCost').val(item.cost_price || '');
         $('#productSell').val(item.sell_price || '');
         $('#productQty').val(item.Stock?.quantity ?? item.quantity ?? 0);
@@ -508,7 +510,9 @@
         if (!validateProduct()) return;
         try {
             const formData = new FormData(this);
-            formData.set('description', $('#productName').val());
+            formData.set('name', $('#productName').val());
+            formData.set('category', $('#productCategory').val() || 'Uncategorized');
+            formData.set('description', $('#productDescription').val());
             formData.set('quantity', $('#productQty').val());
             const id = $('#productId').val();
             const path = id ? `/items/${id}` : '/items';
