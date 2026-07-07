@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2026 at 01:33 PM
+-- Generation Time: Jul 07, 2026 at 05:41 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -41,7 +41,7 @@ CREATE TABLE `cart` (
 
 INSERT INTO `cart` (`cart_id`, `customer_id`, `session_id`, `created_at`, `updated_at`) VALUES
 (1, 1, NULL, '2026-07-04 00:50:06', '2026-07-04 03:00:24'),
-(2, 2, NULL, '2026-07-04 00:50:48', '2026-07-06 08:41:05'),
+(2, 2, NULL, '2026-07-04 00:50:48', '2026-07-07 15:07:41'),
 (3, 3, NULL, '2026-07-04 02:18:53', '2026-07-04 02:18:53');
 
 -- --------------------------------------------------------
@@ -138,17 +138,22 @@ INSERT INTO `orderinfo` (`order_id`, `customer_id`, `date_placed`, `date_shipped
 (4, 2, '2026-07-04 00:51:30', NULL, 'pending'),
 (5, 2, '2026-07-04 00:51:30', NULL, 'pending'),
 (6, 2, '2026-07-04 00:51:30', NULL, 'pending'),
-(7, 2, '2026-07-04 00:51:30', NULL, 'pending'),
+(7, 2, '2026-07-04 00:51:30', NULL, 'processing'),
 (8, 1, '2026-07-04 00:55:37', NULL, 'pending'),
 (9, 1, '2026-07-04 01:19:19', NULL, 'pending'),
 (10, 1, '2026-07-04 01:19:21', NULL, 'pending'),
 (11, 1, '2026-07-04 01:19:21', NULL, 'pending'),
 (12, 1, '2026-07-04 01:19:22', NULL, 'pending'),
 (13, 1, '2026-07-04 01:29:31', NULL, 'pending'),
-(14, 2, '2026-07-04 01:30:18', NULL, 'pending'),
+(14, 2, '2026-07-04 01:30:18', NULL, 'cancelled'),
 (15, 2, '2026-07-04 01:50:16', NULL, 'cancelled'),
-(16, 2, '2026-07-06 08:40:52', NULL, 'pending'),
-(17, 2, '2026-07-06 08:41:08', '2026-07-06 10:38:41', 'completed');
+(16, 2, '2026-07-06 08:40:52', NULL, 'cancelled'),
+(17, 2, '2026-07-06 08:41:08', '2026-07-06 10:38:41', 'completed'),
+(18, 2, '2026-07-07 14:56:59', NULL, 'processing'),
+(19, 2, '2026-07-07 15:04:34', '2026-07-07 15:05:10', 'completed'),
+(20, 2, '2026-07-07 15:05:55', NULL, 'processing'),
+(21, 2, '2026-07-07 15:07:31', NULL, 'pending'),
+(22, 2, '2026-07-07 15:07:45', '2026-07-07 15:08:04', 'completed');
 
 -- --------------------------------------------------------
 
@@ -222,7 +227,14 @@ INSERT INTO `orderline` (`orderline_id`, `orderinfo_id`, `item_id`, `quantity`, 
 (51, 16, 1, 1, 400.00),
 (52, 17, 4, 1, 45.00),
 (53, 17, 3, 1, 231.00),
-(54, 17, 2, 1, 355.00);
+(54, 17, 2, 1, 355.00),
+(55, 18, 3, 1, 231.00),
+(56, 18, 4, 3, 45.00),
+(57, 19, 2, 1, 355.00),
+(58, 19, 3, 3, 231.00),
+(59, 20, 3, 3, 231.00),
+(60, 21, 3, 13, 231.00),
+(61, 22, 3, 13, 231.00);
 
 -- --------------------------------------------------------
 
@@ -268,8 +280,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `token`, `role`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'ns', 'nodeshop@shop.com', '$2b$10$i5y1FH8kP.WdMZIqNAkRg.PgS.feCW0C0YZ9B2vjsJ9c6btaqTXH2', NULL, 'admin', NULL, '2026-06-23 20:01:25', '2026-07-06 10:45:28'),
-(2, 'user1', 'nodeuser@shop.com', '$2b$10$v2l9PPOiDvTEthP13UxmmOXbRQ765uiZ.5uXAkEAzpRmrjEpja2De', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzgzMzM0NzMyLCJleHAiOjE3ODM0MjExMzJ9.D7js0v77tfqV3QC7OMPnsH0p2OtOjPFSkQEZa3Rz1Ag', 'customer', NULL, '2026-06-24 01:38:52', '2026-07-06 10:45:32'),
+(1, 'ns', 'nodeshop@shop.com', '$2b$10$i5y1FH8kP.WdMZIqNAkRg.PgS.feCW0C0YZ9B2vjsJ9c6btaqTXH2', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzgzNDM4NzM3LCJleHAiOjE3ODM1MjUxMzd9.SiAgO_uS9PORLvTLKDRMfcfJzfGP8YOZ_-MIzNiOXsk', 'admin', NULL, '2026-06-23 20:01:25', '2026-07-07 15:38:57'),
+(2, 'user1', 'nodeuser@shop.com', '$2b$10$v2l9PPOiDvTEthP13UxmmOXbRQ765uiZ.5uXAkEAzpRmrjEpja2De', NULL, 'customer', NULL, '2026-06-24 01:38:52', '2026-07-07 15:38:53'),
 (3, 'test', 'test@node.com', '$2b$10$1O3UgezEro2v6a92lDyGneLsRXybL4SnkwAC3QcmIF57tFlA9iwoq', NULL, 'admin', NULL, '2026-06-24 02:36:40', '2026-07-05 16:42:21');
 
 --
@@ -346,7 +358,7 @@ ALTER TABLE `cart`
 -- AUTO_INCREMENT for table `cartitem`
 --
 ALTER TABLE `cartitem`
-  MODIFY `cartitem_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `cartitem_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `customer`
@@ -364,13 +376,13 @@ ALTER TABLE `item`
 -- AUTO_INCREMENT for table `orderinfo`
 --
 ALTER TABLE `orderinfo`
-  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `orderline`
 --
 ALTER TABLE `orderline`
-  MODIFY `orderline_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `orderline_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `users`
