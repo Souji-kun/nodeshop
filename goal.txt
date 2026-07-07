@@ -1,5 +1,5 @@
-/*
 new goal
+
 1: fix header to make it stretch from left to right screen, there should be no padding or margin at the very top
 2: fix footer to divide detail and shortcut ratio to 60:40, the shortcut should have text hyperlink clickable but not a button.
 3: make a transaction: make a new card appear or hover above cart that asks to proceed to payment button and later
@@ -10,11 +10,3 @@ new goal
 4: idk if mailer is setup, if setup add receipt downloadable
 5: email verify(is it required????) 
 6: add hover effect on charts to show which products as well for the chart line
-
-
-fixes
-1: product add category dropdown choices
-2: added name and description on item table(check nodetest001.sql)
-3: revamp customer ui
-4: revamp profile button
-*/

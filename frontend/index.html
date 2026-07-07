@@ -163,6 +163,25 @@
                         <button type="button" class="primary-btn" id="checkoutBtn">Checkout</button>
                     </div>
                 </aside>
+                <div class="payment-card hidden" id="paymentCard" role="dialog" aria-modal="true" aria-labelledby="paymentTitle">
+                    <div class="section-head compact">
+                        <div>
+                            <p class="eyebrow">Payment</p>
+                            <h3 id="paymentTitle">Proceed to payment</h3>
+                        </div>
+                        <button type="button" class="ghost-btn" id="paymentCloseBtn">Close</button>
+                    </div>
+                    <p class="muted" id="paymentSummary">Order is ready for payment.</p>
+                    <label class="field">
+                        <span>Amount paid</span>
+                        <input id="paymentAmount" type="number" min="0" step="0.01" placeholder="0.00">
+                    </label>
+                    <p class="form-message" id="paymentMessage"></p>
+                    <div class="payment-actions">
+                        <button type="button" class="primary-btn" id="paymentProceedBtn">Proceed payment</button>
+                        <button type="button" class="ghost-btn" id="paymentCancelBtn">Cancel</button>
+                    </div>
+                </div>
             </section>
 
             <section class="panel hidden" id="profileSection">

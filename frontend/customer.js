@@ -49,6 +49,10 @@
     const $modalPrice = $('#modalPrice');
     const $modalStock = $('#modalStock');
     const $modalAddCart = $('#modalAddCart');
+    const $paymentCard = $('#paymentCard');
+    const $paymentSummary = $('#paymentSummary');
+    const $paymentAmount = $('#paymentAmount');
+    const $paymentMessage = $('#paymentMessage');
 
     let mode = 'login';
     let currentUser = null;
@@ -57,9 +61,14 @@
     let selectedProduct = null;
     let profileSnapshot = null;
     let activeProfileTab = 'details';
+    let pendingPaymentOrder = null;
 
     const setMessage = (text, error = false) => {
         $authMessage.text(text).toggleClass('error', error);
+    };
+
+    const getErrorMessage = (error, fallback = 'Request failed') => {
+        return error?.responseJSON?.error || error?.responseJSON?.message || error?.message || fallback;
     };
 
     const validateAuth = () => {
@@ -120,6 +129,7 @@
     };
 
     const itemName = (item) => item?.name || item?.description || 'Untitled plush';
+    const itemAvailableStock = (item) => Number(item?.Stock?.available_quantity ?? item?.Stock?.quantity ?? item?.quantity ?? 0);
 
     const renderCatalog = (items) => {
         const q = String($searchInput.val() || '').toLowerCase();
@@ -137,7 +147,7 @@
         }
 
         $catalogList.html(filtered.map((item) => {
-            const stock = Number(item.Stock?.quantity ?? item.quantity ?? 0);
+            const stock = itemAvailableStock(item);
             const images = Array.isArray(item.images) && item.images.length ? item.images : (item.img_path ? [item.img_path] : []);
             const image = images.length ? `/${String(images[0]).replace(/^\/+/, '')}` : '';
             return `
@@ -200,6 +210,22 @@
         $cartTotal.text(formatMoney(subtotal + shipping));
     };
 
+    const openPaymentCard = (order) => {
+        pendingPaymentOrder = order;
+        const total = Number(order?.total_amount || 0);
+        $paymentSummary.text(`Order #${order.order_id} total: ${formatMoney(total)}`);
+        $paymentAmount.val(total.toFixed(2));
+        $paymentMessage.text('').removeClass('error');
+        $paymentCard.removeClass('hidden');
+        closeCart();
+    };
+
+    const closePaymentCard = () => {
+        pendingPaymentOrder = null;
+        $paymentCard.addClass('hidden');
+        $paymentMessage.text('').removeClass('error');
+    };
+
     const openCart = () => {
         $cartPanel.removeClass('hidden is-closing');
         $cartBackdrop.removeClass('hidden');
@@ -229,10 +255,10 @@
         $productModalTitle.text(itemName(item));
         $modalDescription.text(item.description || '');
         $modalPrice.text(formatMoney(item.sell_price));
-        $modalStock.text(String(Number(item.Stock?.quantity ?? item.quantity ?? 0)));
+        $modalStock.text(String(itemAvailableStock(item)));
         $modalMainImage.css('background-image', mainImage ? `url("${mainImage}")` : 'none');
         $modalThumbs.html(normalizedImages.map((img, index) => `<button type="button" class="modal-thumb${index === 0 ? ' active' : ''}" data-src="${img}" style="background-image:url('${img}')"></button>`).join(''));
-        $modalAddCart.prop('disabled', Number(item.Stock?.quantity ?? item.quantity ?? 0) <= 0);
+        $modalAddCart.prop('disabled', itemAvailableStock(item) <= 0);
         $modalAddCart.data('id', item.item_id);
         $productModal.removeClass('hidden').attr('aria-hidden', 'false');
     };
@@ -279,15 +305,66 @@
         $profileImageInput.val('');
         $profileMessage.text('');
 
-        const orderRows = (orders.orders || []).map((order) => `
-            <article class="order-card">
+        const orderRows = (orders.orders || []).map((order) => {
+            const status = order.status || 'pending';
+            const canPay = status === 'pending';
+            const canReceipt = status === 'processing' || status === 'completed';
+
+            return `
+            <article class="order-card" data-order-id="${order.order_id}" data-order-total="${order.total_amount}">
                 <strong>Order #${order.order_id}</strong>
-                <p>Status: ${order.status || 'pending'}</p>
+                <p>Status: <span class="order-status-badge">${status}</span></p>
                 <p>Total: ${formatMoney(order.total_amount)}</p>
                 <p>Placed: ${formatDate(order.date_placed)}</p>
+                <div class="order-actions">
+                    ${canPay ? `<button type="button" class="primary-btn order-pay" data-id="${order.order_id}">Proceed payment</button>` : ''}
+                    ${canPay ? `<button type="button" class="ghost-btn order-cancel" data-id="${order.order_id}">Cancel</button>` : ''}
+                    ${canReceipt ? `<button type="button" class="ghost-btn order-receipt" data-id="${order.order_id}">Check receipt</button>` : ''}
+                </div>
             </article>
-        `).join('');
+        `;
+        }).join('');
         $orderList.html(orderRows || '<p class="empty-state">No orders yet.</p>');
+    };
+
+    const payOrder = async (order, amount) => {
+        closeCart();
+        const response = await request('PATCH', `/my-orders/${order.order_id}/status`, {
+            action: 'pay',
+            amount
+        });
+        const change = Number(response.change || 0);
+        notify(change > 0 ? `Payment accepted. Sukli: ${formatMoney(change)}` : 'Payment accepted');
+        closePaymentCard();
+        await loadCart();
+        await loadProducts();
+        if (!$profileSection.hasClass('hidden')) {
+            await loadProfile();
+            setProfileTab('orders');
+        }
+    };
+
+    const cancelOrder = async (orderId) => {
+        closeCart();
+        await request('PATCH', `/my-orders/${orderId}/status`, { action: 'cancel' });
+        notify('Order cancelled');
+        await loadProducts();
+        await loadProfile();
+        setProfileTab('orders');
+    };
+
+    const showReceipt = async (orderId) => {
+        const orders = await request('GET', '/my-orders');
+        const order = (orders.orders || []).find((line) => Number(line.order_id) === Number(orderId));
+        if (!order) {
+            notify('Receipt not found', 'error');
+            return;
+        }
+        const items = (order.OrderItems || []).map((line) => {
+            const name = line.Item?.name || line.Item?.description || `Item #${line.item_id}`;
+            return `${name} x ${line.quantity} - ${formatMoney(Number(line.unit_price) * Number(line.quantity))}`;
+        }).join('\n');
+        window.alert(`Receipt for Order #${order.order_id}\n\n${items || 'No items'}\n\nSubtotal: ${formatMoney(order.subtotal)}\nShipping: ${formatMoney(order.shipping)}\nTotal: ${formatMoney(order.total_amount)}\nStatus: ${order.status}`);
     };
 
     const saveProfile = async () => {
@@ -509,7 +586,7 @@
             await loadCart();
             notify('Added to cart');
         } catch (error) {
-            notify(error.message || 'Could not add item', 'error');
+            notify(getErrorMessage(error, 'Could not add item'), 'error');
         }
     });
 
@@ -530,7 +607,7 @@
             closeModal();
             notify('Added to cart');
         } catch (error) {
-            notify(error.message || 'Could not add item', 'error');
+            notify(getErrorMessage(error, 'Could not add item'), 'error');
         }
     });
 
@@ -553,18 +630,71 @@
             }
             await loadCart();
         } catch (error) {
-            notify(error.message || 'Cart update failed', 'error');
+            notify(getErrorMessage(error, 'Cart update failed'), 'error');
         }
     });
 
     $('#checkoutBtn').on('click', async () => {
         try {
-            await request('POST', '/create-order', { cart });
+            if (!cart.length) {
+                notify('Your cart is empty', 'error');
+                return;
+            }
+            closeCart();
+            const response = await request('POST', '/create-order', { cart });
             cart = [];
             await loadCart();
-            notify('Checkout successful');
+            await loadProducts();
+            openPaymentCard(response);
+            notify('Order created');
         } catch (error) {
-            notify(error.message || 'Checkout failed', 'error');
+            notify(getErrorMessage(error, 'Checkout failed'), 'error');
+        }
+    });
+
+    $('#paymentProceedBtn').on('click', async () => {
+        if (!pendingPaymentOrder) return;
+        const amount = Number($paymentAmount.val());
+        if (!Number.isFinite(amount) || amount <= 0) {
+            $paymentMessage.text('Please enter a positive amount.').addClass('error');
+            return;
+        }
+        try {
+            await payOrder(pendingPaymentOrder, amount);
+        } catch (error) {
+            const message = getErrorMessage(error, 'Payment failed');
+            $paymentMessage.text(message).addClass('error');
+        }
+    });
+
+    $('#paymentCancelBtn, #paymentCloseBtn').on('click', () => {
+        notify('Order remains pending');
+        closeCart();
+        closePaymentCard();
+    });
+
+    $orderList.on('click', async function (event) {
+        const payButton = event.target.closest('.order-pay');
+        const cancelButton = event.target.closest('.order-cancel');
+        const receiptButton = event.target.closest('.order-receipt');
+        const button = payButton || cancelButton || receiptButton;
+        if (!button) return;
+
+        const orderId = Number(button.dataset.id);
+        const $card = $(button).closest('[data-order-id]');
+        const total = Number($card.data('order-total') || 0);
+
+        try {
+            if (payButton) {
+                openPaymentCard({ order_id: orderId, total_amount: total });
+            } else if (cancelButton) {
+                await cancelOrder(orderId);
+            } else if (receiptButton) {
+                await showReceipt(orderId);
+            }
+        } catch (error) {
+            const message = getErrorMessage(error, 'Order action failed');
+            notify(message, 'error');
         }
     });
 
@@ -602,7 +732,7 @@
             await loadProfile();
             notify('Profile updated');
         } catch (error) {
-            const message = error.responseJSON?.message || error.responseJSON?.error || error.message || 'Profile update failed';
+            const message = getErrorMessage(error, 'Profile update failed');
             $profileMessage.text(message);
             notify(message, 'error');
         }

@@ -267,11 +267,11 @@ body.is-booting { overflow: hidden; }
 .topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 18px;
     position: sticky;
-    top: 0px;
+    top: 0;
     z-index: 80;
-    width: 100%;
-    margin: 0;
-    padding: 16px 18px;
+    width: 100vw;
+    margin: 0 0 24px calc(50% - 50vw);
+    padding: 16px max(18px, calc((100vw - 1180px) / 2 + 18px));
     border: 1px solid rgba(87, 57, 46, 0.14);
     border-radius: 0;
     background:
@@ -295,8 +295,8 @@ body.is-booting { overflow: hidden; }
 }
 
 .site-footer {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 24px;
     align-items: flex-start;
     margin-top: 28px;
@@ -322,16 +322,54 @@ body.is-booting { overflow: hidden; }
 
 .footer-nav a,
 .footer-nav button {
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 0 14px;
-    background: rgba(255,255,255,.72);
+    display: inline;
+    border: 0;
+    padding: 0;
+    background: transparent;
     color: var(--text);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 4px;
     cursor: pointer;
+}
+
+.payment-card {
+    position: fixed;
+    right: min(452px, calc(100vw - 440px));
+    top: 92px;
+    z-index: 980;
+    width: min(360px, calc(100vw - 28px));
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255,255,255,.98);
+    box-shadow: var(--shadow);
+}
+
+.payment-actions,
+.order-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.payment-actions .primary-btn,
+.payment-actions .ghost-btn,
+.order-actions .primary-btn,
+.order-actions .ghost-btn {
+    width: auto;
+}
+
+.order-status-badge {
+    display: inline-flex;
+    width: fit-content;
+    min-height: 30px;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(111,145,201,.12);
+    color: var(--accent-2);
+    font-weight: 800;
+    text-transform: capitalize;
 }
 
 .hero {
@@ -657,6 +695,9 @@ canvas { width: 100%; display: block; }
     .hero, .cards-grid, .stats-row, .stats-grid { grid-template-columns: 1fr 1fr; }
     .chart-grid { grid-template-columns: 1fr; }
     .topbar, .section-head, .cart-line { flex-direction: column; align-items: flex-start; }
+    .site-footer { grid-template-columns: 1fr; }
+    .footer-nav { justify-content: flex-start; }
+    .payment-card { right: 14px; top: 88px; }
     .table-head, .table-row { grid-template-columns: 1fr; }
     .product-modal-grid { grid-template-columns: 1fr; }
     .modal-main-image { min-height: 280px; }

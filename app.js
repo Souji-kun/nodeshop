@@ -50,3 +50,7 @@ app.use((error, req, res, next) => {
 });
 
 module.exports = app
+
+if (require.main === module) {
+    require('./index');
+}

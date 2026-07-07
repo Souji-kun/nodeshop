@@ -76,7 +76,9 @@
         setMessage('');
     };
 
-    const showAuth = () => { $authScreen.removeClass('hidden'); $adminApp.addClass('hidden'); };
+    const showAuth = () => {
+        window.location.replace('/index.html');
+    };
     const showApp = () => { $authScreen.addClass('hidden'); $adminApp.removeClass('hidden'); };
 
     const setPanel = (panel) => {
@@ -370,14 +372,33 @@
     };
 
     const loadDashboard = async () => {
-        const [productRes, orderRes, userRes] = await Promise.all([
+        const [productRes, orderRes, userRes] = await Promise.allSettled([
             request('GET', '/items'),
             request('GET', '/orders'),
             request('GET', '/users')
         ]);
-        products = productRes.rows || [];
-        orders = orderRes.orders || [];
-        users = userRes.rows || [];
+
+        if (productRes.status === 'fulfilled') {
+            products = productRes.value.rows || [];
+        } else {
+            products = [];
+            notify(productRes.reason?.responseJSON?.error || productRes.reason?.message || 'Products could not load', 'error');
+        }
+
+        if (orderRes.status === 'fulfilled') {
+            orders = orderRes.value.orders || [];
+        } else {
+            orders = [];
+            notify(orderRes.reason?.responseJSON?.error || orderRes.reason?.message || 'Orders could not load', 'error');
+        }
+
+        if (userRes.status === 'fulfilled') {
+            users = userRes.value.rows || [];
+        } else {
+            users = [];
+            notify(userRes.reason?.responseJSON?.error || userRes.reason?.message || 'Users could not load', 'error');
+        }
+
         productPage = 1;
         orderPage = 1;
         userPage = 1;
@@ -393,7 +414,6 @@
         const token = getToken();
         if (!token) {
             showAuth();
-            hideBoot();
             return;
         }
 
@@ -412,7 +432,6 @@
         } catch {
             clearToken();
             showAuth();
-            hideBoot();
         }
     };
 

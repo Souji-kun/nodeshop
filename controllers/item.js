@@ -79,6 +79,44 @@ const serializeItem = (item) => {
     };
 };
 
+const getReservedQuantities = async (itemIds = []) => {
+    if (!itemIds.length) {
+        return {};
+    }
+
+    const [rows] = await sequelize.query(
+        `
+            SELECT ol.item_id, COALESCE(SUM(ol.quantity), 0) AS reserved
+            FROM orderline ol
+            INNER JOIN orderinfo oi ON oi.orderinfo_id = ol.orderinfo_id
+            WHERE oi.status = 'pending'
+              AND ol.item_id IN (:itemIds)
+            GROUP BY ol.item_id
+        `,
+        { replacements: { itemIds } }
+    );
+
+    return rows.reduce((map, row) => {
+        map[row.item_id] = Number(row.reserved || 0);
+        return map;
+    }, {});
+};
+
+const withAvailableStock = (item, reservedQuantities = {}) => {
+    const serialized = serializeItem(item);
+    const reserved = Number(reservedQuantities[serialized.item_id] || 0);
+    const quantity = Number(serialized.Stock?.quantity || 0);
+
+    return {
+        ...serialized,
+        Stock: serialized.Stock ? {
+            ...serialized.Stock,
+            reserved_quantity: reserved,
+            available_quantity: Math.max(0, quantity - reserved)
+        } : serialized.Stock
+    };
+};
+
 // Get all items with stock
 exports.getAllItems = async (req, res) => {
     try {
@@ -86,7 +124,8 @@ exports.getAllItems = async (req, res) => {
             order: [['category', 'ASC'], ['item_id', 'DESC']],
             include: [{ model: Stock }]
         });
-        return res.status(200).json({ rows: items.map(serializeItem) });
+        const reservedQuantities = await getReservedQuantities(items.map((item) => item.item_id));
+        return res.status(200).json({ rows: items.map((item) => withAvailableStock(item, reservedQuantities)) });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: 'Error fetching items' });
@@ -104,7 +143,8 @@ exports.getSingleItem = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
 
-        return res.status(200).json({ success: true, result: serializeItem(item) });
+        const reservedQuantities = await getReservedQuantities([item.item_id]);
+        return res.status(200).json({ success: true, result: withAvailableStock(item, reservedQuantities) });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: 'Error fetching item' });
