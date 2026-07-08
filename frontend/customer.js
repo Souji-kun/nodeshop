@@ -68,7 +68,7 @@
     };
 
     const getErrorMessage = (error, fallback = 'Request failed') => {
-        return error?.responseJSON?.error || error?.responseJSON?.message || error?.message || fallback;
+        return error?.responseJSON?.details || error?.responseJSON?.error || error?.responseJSON?.message || error?.message || fallback;
     };
 
     const validateAuth = () => {

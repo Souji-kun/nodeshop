@@ -12,6 +12,113 @@ const sendEmail = require('../utils/sendEmail');
 const allowedAdminStatuses = ['processing', 'completed', 'cancelled'];
 const SHIPPING_FEE = 100;
 
+const escapePdfText = (value) => String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+
+const buildReceiptPdfBuffer = (order, customer) => {
+    const orderItems = Array.isArray(order.OrderItems) ? order.OrderItems : [];
+    const orderNumber = String(order.order_id || 'N/A');
+    const customerName = customer.User?.name || customer.User?.email || 'Customer';
+    const customerEmail = customer.User?.email || 'N/A';
+    const datePlaced = new Date(order.date_placed || Date.now()).toLocaleString();
+    const status = String(order.status || 'pending').toUpperCase();
+    const subtotal = Number(order.subtotal || 0).toFixed(2);
+    const shipping = Number(order.shipping || SHIPPING_FEE).toFixed(2);
+    const total = Number(order.total_amount || 0).toFixed(2);
+
+    const itemRows = orderItems.map((line) => {
+        const name = line.Item?.name || line.Item?.description || `Item #${line.item_id}`;
+        const qty = Number(line.quantity || 0);
+        const unit = Number(line.unit_price || 0).toFixed(2);
+        const lineTotal = (Number(line.unit_price || 0) * qty).toFixed(2);
+        return {
+            name,
+            qty,
+            unit,
+            lineTotal
+        };
+    });
+
+    const rowTexts = itemRows.map((row, index) => {
+        const y = 560 - (index * 22);
+        return [
+            `BT /F1 10 Tf 55 ${y} Td (${escapePdfText(row.name)}) Tj ET`,
+            `BT /F1 10 Tf 330 ${y} Td (${escapePdfText(String(row.qty))}) Tj ET`,
+            `BT /F1 10 Tf 390 ${y} Td ($${escapePdfText(row.unit)}) Tj ET`,
+            `BT /F1 10 Tf 470 ${y} Td ($${escapePdfText(row.lineTotal)}) Tj ET`
+        ].join('\n');
+    }).join('\n');
+
+    const totalsBaseY = 120;
+    const summaryLines = [
+        `BT /F1 11 Tf 360 ${totalsBaseY + 45} Td (Subtotal) Tj ET`,
+        `BT /F1 11 Tf 470 ${totalsBaseY + 45} Td ($${escapePdfText(subtotal)}) Tj ET`,
+        `BT /F1 11 Tf 360 ${totalsBaseY + 25} Td (Shipping) Tj ET`,
+        `BT /F1 11 Tf 470 ${totalsBaseY + 25} Td ($${escapePdfText(shipping)}) Tj ET`,
+        `BT /F1 12 Tf 360 ${totalsBaseY} Td (TOTAL) Tj ET`,
+        `BT /F1 12 Tf 470 ${totalsBaseY} Td ($${escapePdfText(total)}) Tj ET`
+    ].join('\n');
+
+    const contentLines = `
+BT /F1 20 Tf 50 760 Td (PLUSH SHOP) Tj ET
+BT /F1 10 Tf 50 742 Td (Official Receipt) Tj ET
+BT /F1 10 Tf 420 760 Td (Receipt No: ${escapePdfText(orderNumber)}) Tj ET
+BT /F1 10 Tf 420 742 Td (Date: ${escapePdfText(datePlaced)}) Tj ET
+BT /F1 10 Tf 50 705 Td (Customer) Tj ET
+BT /F1 10 Tf 50 688 Td (${escapePdfText(customerName)}) Tj ET
+BT /F1 10 Tf 50 671 Td (${escapePdfText(customerEmail)}) Tj ET
+BT /F1 10 Tf 420 705 Td (Status) Tj ET
+BT /F1 12 Tf 420 686 Td (${escapePdfText(status)}) Tj ET
+BT /F1 10 Tf 50 628 Td (Item) Tj ET
+BT /F1 10 Tf 330 628 Td (Qty) Tj ET
+BT /F1 10 Tf 390 628 Td (Unit) Tj ET
+BT /F1 10 Tf 470 628 Td (Line Total) Tj ET
+${rowTexts}
+${summaryLines}
+`.trim();
+
+    const objects = [
+        '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n',
+        '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n',
+        '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n',
+        '4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n',
+        `5 0 obj << /Length ${Buffer.byteLength(contentLines, 'utf8')} >> stream\n${contentLines}\nendstream\nendobj\n`
+    ];
+
+    let output = '%PDF-1.4\n';
+    const offsets = ['0000000000 65535 f \n'];
+    objects.forEach((object) => {
+        offsets.push(`${String(Buffer.byteLength(output, 'utf8')).padStart(10, '0')} 00000 n \n`);
+        output += object;
+    });
+
+    const xrefOffset = Buffer.byteLength(output, 'utf8');
+    output += `xref\n0 ${objects.length + 1}\n${offsets.join('')}trailer << /Root 1 0 R /Size ${objects.length + 1} >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return Buffer.from(output, 'utf8');
+};
+
+const buildOrderEmailLines = (order, customer, messagePrefix = 'Transaction') => {
+    const orderItems = Array.isArray(order.OrderItems) ? order.OrderItems : [];
+    const lines = orderItems.map((line) => {
+        const name = line.Item?.name || line.Item?.description || `Item #${line.item_id}`;
+        const total = Number(line.unit_price || 0) * Number(line.quantity || 0);
+        return `<li>${name} x ${line.quantity} - $${total.toFixed(2)}</li>`;
+    }).join('');
+
+    return `
+        <h2>${messagePrefix} #${order.order_id}</h2>
+        <p>Hello ${customer.User?.name || 'customer'},</p>
+        <p>Your ${messagePrefix.toLowerCase()} was successful.</p>
+        <ul>${lines || '<li>No items</li>'}</ul>
+        <p>Subtotal: $${Number(order.subtotal || 0).toFixed(2)}</p>
+        <p>Shipping: $${Number(order.shipping || SHIPPING_FEE).toFixed(2)}</p>
+        <p>Total: $${Number(order.total_amount || 0).toFixed(2)}</p>
+        <p>Status: ${order.status || 'pending'}</p>
+    `;
+};
+
 const getOrderTotals = (order) => {
     const plainOrder = order.get ? order.get({ plain: true }) : order;
     const orderItems = Array.isArray(plainOrder.OrderItems) ? plainOrder.OrderItems : [];
@@ -22,19 +129,25 @@ const getOrderTotals = (order) => {
 
     return {
         ...plainOrder,
+        status: plainOrder.status || 'pending',
         subtotal: subtotal.toFixed(2),
         shipping: SHIPPING_FEE.toFixed(2),
         total_amount: (subtotal + SHIPPING_FEE).toFixed(2)
     };
 };
 
+const withOrderStatus = (order, status) => ({
+    ...getOrderTotals(order),
+    status: status || 'pending'
+});
+
 const getReservedQuantity = async (itemId, transaction = null, excludeOrderId = null) => {
-    const excludeSql = excludeOrderId ? 'AND oi.orderinfo_id <> :excludeOrderId' : '';
+    const excludeSql = excludeOrderId ? 'AND oi.order_id <> :excludeOrderId' : '';
     const [rows] = await db.sequelize.query(
         `
             SELECT COALESCE(SUM(ol.quantity), 0) AS reserved
             FROM orderline ol
-            INNER JOIN orderinfo oi ON oi.orderinfo_id = ol.orderinfo_id
+            INNER JOIN orderinfo oi ON oi.order_id = ol.orderinfo_id
             WHERE ol.item_id = :itemId
               AND oi.status = 'pending'
               ${excludeSql}
@@ -164,11 +277,25 @@ exports.createOrder = async (req, res, next) => {
         
         // Send confirmation email
         try {
-            const message = `Your order #${order.order_id} has been placed successfully. Total amount: $${grandTotal.toFixed(2)}`;
+            const orderWithItems = await Order.findByPk(order.order_id, {
+                include: [
+                    {
+                        model: OrderItem,
+                        include: [Item]
+                    }
+                ]
+            });
+            const receiptOrder = withOrderStatus(orderWithItems || order, 'pending');
+
             await sendEmail({
                 email: customer.User.email,
-                subject: 'Order Confirmation',
-                message
+                subject: `Order Confirmation #${order.order_id}`,
+                html: buildOrderEmailLines(receiptOrder, customer, 'Order'),
+                attachments: [{
+                    filename: `receipt-order-${order.order_id}.pdf`,
+                    content: buildReceiptPdfBuffer(receiptOrder, customer),
+                    contentType: 'application/pdf'
+                }]
             });
         } catch (emailErr) {
             console.log('Email error:', emailErr);
@@ -272,6 +399,10 @@ exports.updateMyOrderStatus = async (req, res) => {
         if (!customer) {
             return res.status(404).json({ error: 'Customer not found' });
         }
+        const customerWithUser = await Customer.findOne({
+            where: { user_id: userId },
+            include: [User]
+        });
 
         const order = await Order.findOne({
             where: {
@@ -356,6 +487,31 @@ exports.updateMyOrderStatus = async (req, res) => {
 
                 await order.update({ status: 'processing' }, { transaction });
             });
+
+            try {
+                const processedOrder = await Order.findByPk(order.order_id, {
+                    include: [
+                        {
+                            model: OrderItem,
+                            include: [Item]
+                        }
+                    ]
+                });
+                const receiptOrder = withOrderStatus(processedOrder || order, 'processing');
+
+                await sendEmail({
+                    email: customerWithUser?.User?.email || customer.User?.email,
+                    subject: `Payment Receipt #${order.order_id}`,
+                    html: buildOrderEmailLines(receiptOrder, customerWithUser || customer, 'Payment'),
+                    attachments: [{
+                        filename: `receipt-payment-${order.order_id}.pdf`,
+                        content: buildReceiptPdfBuffer(receiptOrder, customerWithUser || customer),
+                        contentType: 'application/pdf'
+                    }]
+                });
+            } catch (emailErr) {
+                console.log('Email error:', emailErr);
+            }
 
             return res.status(200).json({
                 success: true,

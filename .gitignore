@@ -1,6 +1,1 @@
-/node_modules/
-# production
-# misc
-/config/.env
-/.env
 nodetest.sql

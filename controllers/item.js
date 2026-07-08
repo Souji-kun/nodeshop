@@ -88,7 +88,7 @@ const getReservedQuantities = async (itemIds = []) => {
         `
             SELECT ol.item_id, COALESCE(SUM(ol.quantity), 0) AS reserved
             FROM orderline ol
-            INNER JOIN orderinfo oi ON oi.orderinfo_id = ol.orderinfo_id
+            INNER JOIN orderinfo oi ON oi.order_id = ol.orderinfo_id
             WHERE oi.status = 'pending'
               AND ol.item_id IN (:itemIds)
             GROUP BY ol.item_id
@@ -124,7 +124,14 @@ exports.getAllItems = async (req, res) => {
             order: [['category', 'ASC'], ['item_id', 'DESC']],
             include: [{ model: Stock }]
         });
-        const reservedQuantities = await getReservedQuantities(items.map((item) => item.item_id));
+
+        let reservedQuantities = {};
+        try {
+            reservedQuantities = await getReservedQuantities(items.map((item) => item.item_id));
+        } catch (stockError) {
+            console.warn('Unable to calculate reserved quantities for items, returning stock without reservations:', stockError.message);
+        }
+
         return res.status(200).json({ rows: items.map((item) => withAvailableStock(item, reservedQuantities)) });
     } catch (error) {
         console.log(error);
@@ -143,7 +150,13 @@ exports.getSingleItem = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
 
-        const reservedQuantities = await getReservedQuantities([item.item_id]);
+        let reservedQuantities = {};
+        try {
+            reservedQuantities = await getReservedQuantities([item.item_id]);
+        } catch (stockError) {
+            console.warn('Unable to calculate reserved quantity for item, returning stock without reservations:', stockError.message);
+        }
+
         return res.status(200).json({ success: true, result: withAvailableStock(item, reservedQuantities) });
     } catch (error) {
         console.log(error);
