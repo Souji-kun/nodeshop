@@ -141,6 +141,32 @@ const withOrderStatus = (order, status) => ({
     status: status || 'pending'
 });
 
+const loadOrderReceiptContext = async (orderId, status = null) => {
+    const order = await Order.findByPk(orderId, {
+        include: [
+            {
+                model: Customer,
+                include: [User]
+            },
+            {
+                model: OrderItem,
+                include: [Item]
+            }
+        ]
+    });
+
+    if (!order) {
+        return null;
+    }
+
+    const receiptOrder = withOrderStatus(order, status || order.status || 'pending');
+    return {
+        order,
+        receiptOrder,
+        customer: order.Customer
+    };
+};
+
 const getReservedQuantity = async (itemId, transaction = null, excludeOrderId = null) => {
     const excludeSql = excludeOrderId ? 'AND oi.order_id <> :excludeOrderId' : '';
     const [rows] = await db.sequelize.query(
@@ -277,23 +303,17 @@ exports.createOrder = async (req, res, next) => {
         
         // Send confirmation email
         try {
-            const orderWithItems = await Order.findByPk(order.order_id, {
-                include: [
-                    {
-                        model: OrderItem,
-                        include: [Item]
-                    }
-                ]
-            });
-            const receiptOrder = withOrderStatus(orderWithItems || order, 'pending');
+            const receiptContext = await loadOrderReceiptContext(order.order_id, 'pending');
+            const receiptOrder = receiptContext?.receiptOrder || withOrderStatus(order, 'pending');
+            const receiptCustomer = receiptContext?.customer || customer;
 
             await sendEmail({
                 email: customer.User.email,
                 subject: `Order Confirmation #${order.order_id}`,
-                html: buildOrderEmailLines(receiptOrder, customer, 'Order'),
+                html: buildOrderEmailLines(receiptOrder, receiptCustomer, 'Order'),
                 attachments: [{
                     filename: `receipt-order-${order.order_id}.pdf`,
-                    content: buildReceiptPdfBuffer(receiptOrder, customer),
+                    content: buildReceiptPdfBuffer(receiptOrder, receiptCustomer),
                     contentType: 'application/pdf'
                 }]
             });
@@ -489,23 +509,17 @@ exports.updateMyOrderStatus = async (req, res) => {
             });
 
             try {
-                const processedOrder = await Order.findByPk(order.order_id, {
-                    include: [
-                        {
-                            model: OrderItem,
-                            include: [Item]
-                        }
-                    ]
-                });
-                const receiptOrder = withOrderStatus(processedOrder || order, 'processing');
+                const receiptContext = await loadOrderReceiptContext(order.order_id, 'processing');
+                const receiptOrder = receiptContext?.receiptOrder || withOrderStatus(order, 'processing');
+                const receiptCustomer = receiptContext?.customer || customerWithUser || customer;
 
                 await sendEmail({
                     email: customerWithUser?.User?.email || customer.User?.email,
                     subject: `Payment Receipt #${order.order_id}`,
-                    html: buildOrderEmailLines(receiptOrder, customerWithUser || customer, 'Payment'),
+                    html: buildOrderEmailLines(receiptOrder, receiptCustomer, 'Payment'),
                     attachments: [{
                         filename: `receipt-payment-${order.order_id}.pdf`,
-                        content: buildReceiptPdfBuffer(receiptOrder, customerWithUser || customer),
+                        content: buildReceiptPdfBuffer(receiptOrder, receiptCustomer),
                         contentType: 'application/pdf'
                     }]
                 });
@@ -553,6 +567,24 @@ exports.updateOrderStatus = async (req, res) => {
             status,
             date_shipped: status === 'completed' ? new Date() : order.date_shipped
         });
+
+        try {
+            const receiptContext = await loadOrderReceiptContext(id, status);
+            if (receiptContext?.customer?.User?.email) {
+                await sendEmail({
+                    email: receiptContext.customer.User.email,
+                    subject: `Order Status Updated #${id}`,
+                    html: buildOrderEmailLines(receiptContext.receiptOrder, receiptContext.customer, 'Order Update'),
+                    attachments: [{
+                        filename: `receipt-order-${id}-${status}.pdf`,
+                        content: buildReceiptPdfBuffer(receiptContext.receiptOrder, receiptContext.customer),
+                        contentType: 'application/pdf'
+                    }]
+                });
+            }
+        } catch (emailErr) {
+            console.log('Email error:', emailErr);
+        }
 
         return res.status(200).json({
             success: true,

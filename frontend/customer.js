@@ -62,6 +62,10 @@
     let profileSnapshot = null;
     let activeProfileTab = 'details';
     let pendingPaymentOrder = null;
+    const productPageSize = 8;
+    let productRenderCount = 0;
+    let productLoadRaf = null;
+    let productsEndMessageShown = false;
 
     const setMessage = (text, error = false) => {
         $authMessage.text(text).toggleClass('error', error);
@@ -131,7 +135,7 @@
     const itemName = (item) => item?.name || item?.description || 'Untitled plush';
     const itemAvailableStock = (item) => Number(item?.Stock?.available_quantity ?? item?.Stock?.quantity ?? item?.quantity ?? 0);
 
-    const renderCatalog = (items) => {
+    const renderCatalog = (items, { append = false } = {}) => {
         const q = String($searchInput.val() || '').toLowerCase();
         const filtered = items.filter((item) =>
             !q ||
@@ -143,10 +147,21 @@
         if (!filtered.length) {
             $catalogList.html('<p class="empty-state">No plushies found.</p>');
             $searchSuggestions.addClass('hidden').empty();
+            productRenderCount = 0;
+            productsEndMessageShown = true;
             return;
         }
 
-        $catalogList.html(filtered.map((item) => {
+        if (!append) {
+            productRenderCount = 0;
+            productsEndMessageShown = false;
+            $catalogList.empty();
+        }
+
+        const nextBatch = filtered.slice(productRenderCount, productRenderCount + productPageSize);
+        productRenderCount += nextBatch.length;
+
+        $catalogList.append(nextBatch.map((item) => {
             const stock = itemAvailableStock(item);
             const images = Array.isArray(item.images) && item.images.length ? item.images : (item.img_path ? [item.img_path] : []);
             const image = images.length ? `/${String(images[0]).replace(/^\/+/, '')}` : '';
@@ -172,6 +187,16 @@
         `).join('');
         $searchSuggestions.html(suggestions ? suggestions : '<div class="empty-state">No suggestions.</div>');
         $searchSuggestions.toggleClass('hidden', !q);
+
+        $catalogList.find('.catalog-end-message').remove();
+        if (productRenderCount >= filtered.length) {
+            if (!productsEndMessageShown) {
+                $catalogList.append('<p class="empty-state catalog-end-message">No more products left to show.</p>');
+                productsEndMessageShown = true;
+            }
+        } else {
+            productsEndMessageShown = false;
+        }
     };
 
     const renderCart = () => {
@@ -242,6 +267,41 @@
         const response = await request('GET', '/items');
         products = response.rows || [];
         renderCatalog(products);
+    };
+
+    const loadMoreProducts = () => {
+        if (!$shopView.is(':visible')) {
+            return;
+        }
+
+        const q = String($searchInput.val() || '').toLowerCase();
+        const filtered = products.filter((item) =>
+            !q ||
+            String(itemName(item)).toLowerCase().includes(q) ||
+            String(item.description || '').toLowerCase().includes(q) ||
+            String(item.category || '').toLowerCase().includes(q)
+        );
+
+        if (productRenderCount >= filtered.length) {
+            return;
+        }
+
+        renderCatalog(products, { append: true });
+    };
+
+    const scheduleLoadMoreProducts = () => {
+        if (productLoadRaf) {
+            return;
+        }
+
+        productLoadRaf = window.requestAnimationFrame(() => {
+            productLoadRaf = null;
+            const doc = document.documentElement;
+            const nearBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 260;
+            if (nearBottom) {
+                loadMoreProducts();
+            }
+        });
     };
 
     const openModal = (item) => {
@@ -571,6 +631,8 @@
         renderCatalog(products);
         $('#catalog').get(0)?.scrollIntoView({ behavior: 'smooth' });
     });
+
+    $(window).on('scroll', scheduleLoadMoreProducts);
 
     $catalogList.on('click', async function (event) {
         const button = event.target.closest('.add-cart');
